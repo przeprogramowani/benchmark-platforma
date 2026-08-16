@@ -46,6 +46,10 @@ jobs:
           cache: npm
           cache-dependency-path: .bench-kit/runner/package-lock.json
       - run: npm ci --prefix .bench-kit/runner
+      - name: dostęp read-only do prywatnego repo bazowego
+        env:
+          BASE_REPO_TOKEN: ${{ secrets.BASE_REPO_TOKEN }}
+        run: .github/scripts/base-repo-credentials.sh
       - name: bench validate
         run: npm run bench --prefix .bench-kit/runner --silent -- validate --root "$GITHUB_WORKSPACE"
       - name: bench matrix
@@ -72,6 +76,10 @@ jobs:
           cache: npm
           cache-dependency-path: .bench-kit/runner/package-lock.json
       - run: npm ci --prefix .bench-kit/runner
+      - name: dostęp read-only do prywatnego repo bazowego
+        env:
+          BASE_REPO_TOKEN: ${{ secrets.BASE_REPO_TOKEN }}
+        run: .github/scripts/base-repo-credentials.sh
       - name: bench run
         run: |
           npm run bench --prefix .bench-kit/runner --silent -- run \
