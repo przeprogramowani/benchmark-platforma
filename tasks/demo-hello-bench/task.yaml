@@ -2,11 +2,10 @@
 # Schemat: .bench-kit/runner/src/schemas/task.ts
 
 # Identyfikator repo bazowego z bench.config.yaml (base_repos[].name).
-repo: demo-app
+repo: przeprogramowani-edu
 
 # Pinowany commit repo bazowego — punkt startowy workspace'u.
-# (placeholder — podmień na realny SHA po skonfigurowaniu base_repos)
-commit: "0000000000000000000000000000000000000000"
+commit: "3f033ad4a3f70a00db8270deceb664c81cc35a21"
 
 # Twardy timeout wykonania agenta (sekundy).
 timeout_s: 300
