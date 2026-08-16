@@ -1,0 +1,37 @@
+# Rok w stopce platformy — zadanie o poziomie naprowadzenia "produktowy".
+# Prompt opisuje wyłącznie objaw (stary rok w nocie o prawach autorskich);
+# lokalizacja komponentu w monorepo jest częścią zadania.
+# Schemat: .bench-kit/runner/src/schemas/task.ts
+
+repo: przeprogramowani-edu
+
+# Pin = origin/master w chwili tworzenia zadania. Bug jest NATYWNY na tym
+# commicie (nota w stopce ma wbity rok), więc zadanie nie ma overlaya —
+# nie ma czego seedować.
+commit: "3f033ad4a3f70a00db8270deceb664c81cc35a21"
+
+# Naprowadzenie produktowe w monorepo pnpm: agent musi najpierw znaleźć
+# stopkę, potem zmienić. 900 s daje na to miejsce bez mierzenia szybkości.
+timeout_s: 900
+
+evaluation:
+  - static/lint
+  - judge/footer-year
+
+# Rozstrzyga sędzia: rozwiązanie z ponownie wbitym rokiem na sztywno
+# spełnia objaw z promptu, ale nie spełnia wymogu "poprawna również
+# w kolejnych latach" — tej różnicy nie widzi żadna asercja statyczna.
+# static/lint to guard (czy agent nie zepsuł komponentu), nie miara
+# jakości — stąd niska waga.
+weights:
+  static: 0.2
+  tests: 0
+  e2e: 0
+  judge: 0.8
+
+# Guard: lint musi być zielony już na stanie startowym (inaczej karałby
+# agenta za zastane problemy repo bazowego).
+reference:
+  static/lint: pass
+
+expires: "2026-12-31"
