@@ -1,0 +1,287 @@
+{
+  "judge_model": "openrouter/openai/gpt-5.6-sol",
+  "rounds": {
+    "v1": [
+      {
+        "diff": "01-dynamic-year",
+        "rep": 1,
+        "score": 1,
+        "criteria": {
+          "durability": 1,
+          "correctness": 1,
+          "scope": 1
+        }
+      },
+      {
+        "diff": "01-dynamic-year",
+        "rep": 2,
+        "score": 0,
+        "criteria": null,
+        "invalid_reason": "JSON nie parsuje się: SyntaxError: Expected ',' or '}' after property value in JSON at position 379 (line 1 column 380)"
+      },
+      {
+        "diff": "01-dynamic-year",
+        "rep": 3,
+        "score": 1,
+        "criteria": {
+          "durability": 1,
+          "correctness": 1,
+          "scope": 1
+        }
+      },
+      {
+        "diff": "02-hardcoded-2026",
+        "rep": 1,
+        "score": 0.5,
+        "criteria": {
+          "durability": 0,
+          "correctness": 1,
+          "scope": 1
+        }
+      },
+      {
+        "diff": "02-hardcoded-2026",
+        "rep": 2,
+        "score": 0.5,
+        "criteria": {
+          "durability": 0,
+          "correctness": 1,
+          "scope": 1
+        }
+      },
+      {
+        "diff": "02-hardcoded-2026",
+        "rep": 3,
+        "score": 0.5,
+        "criteria": {
+          "durability": 0,
+          "correctness": 1,
+          "scope": 1
+        }
+      },
+      {
+        "diff": "03-dynamic-plus-out-of-scope",
+        "rep": 1,
+        "score": 0.8,
+        "criteria": {
+          "durability": 1,
+          "correctness": 1,
+          "scope": 0
+        }
+      },
+      {
+        "diff": "03-dynamic-plus-out-of-scope",
+        "rep": 2,
+        "score": 0.8,
+        "criteria": {
+          "durability": 1,
+          "correctness": 1,
+          "scope": 0
+        }
+      },
+      {
+        "diff": "03-dynamic-plus-out-of-scope",
+        "rep": 3,
+        "score": 0.8,
+        "criteria": {
+          "durability": 1,
+          "correctness": 1,
+          "scope": 0
+        }
+      },
+      {
+        "diff": "04-empty",
+        "rep": 1,
+        "score": 0.2,
+        "criteria": {
+          "durability": 0,
+          "correctness": 0,
+          "scope": 1
+        }
+      },
+      {
+        "diff": "04-empty",
+        "rep": 2,
+        "score": 0.2,
+        "criteria": {
+          "durability": 0,
+          "correctness": 0,
+          "scope": 1
+        }
+      },
+      {
+        "diff": "04-empty",
+        "rep": 3,
+        "score": 0.2,
+        "criteria": {
+          "durability": 0,
+          "correctness": 0,
+          "scope": 1
+        }
+      }
+    ],
+    "v1-iter2": [
+      {
+        "diff": "01-dynamic-year",
+        "rep": 1,
+        "score": 1,
+        "criteria": {
+          "durability": 1,
+          "correctness": 1,
+          "scope": 1
+        }
+      },
+      {
+        "diff": "01-dynamic-year",
+        "rep": 2,
+        "score": 1,
+        "criteria": {
+          "durability": 1,
+          "correctness": 1,
+          "scope": 1
+        }
+      },
+      {
+        "diff": "01-dynamic-year",
+        "rep": 3,
+        "score": 1,
+        "criteria": {
+          "durability": 1,
+          "correctness": 1,
+          "scope": 1
+        }
+      },
+      {
+        "diff": "01-dynamic-year",
+        "rep": 4,
+        "score": 1,
+        "criteria": {
+          "durability": 1,
+          "correctness": 1,
+          "scope": 1
+        }
+      },
+      {
+        "diff": "02-hardcoded-2026",
+        "rep": 1,
+        "score": 0.5,
+        "criteria": {
+          "durability": 0,
+          "correctness": 1,
+          "scope": 1
+        }
+      },
+      {
+        "diff": "02-hardcoded-2026",
+        "rep": 2,
+        "score": 0.5,
+        "criteria": {
+          "durability": 0,
+          "correctness": 1,
+          "scope": 1
+        }
+      },
+      {
+        "diff": "02-hardcoded-2026",
+        "rep": 3,
+        "score": 0.5,
+        "criteria": {
+          "durability": 0,
+          "correctness": 1,
+          "scope": 1
+        }
+      },
+      {
+        "diff": "02-hardcoded-2026",
+        "rep": 4,
+        "score": 0.5,
+        "criteria": {
+          "durability": 0,
+          "correctness": 1,
+          "scope": 1
+        }
+      },
+      {
+        "diff": "03-dynamic-plus-out-of-scope",
+        "rep": 1,
+        "score": 0.8,
+        "criteria": {
+          "durability": 1,
+          "correctness": 1,
+          "scope": 0
+        }
+      },
+      {
+        "diff": "03-dynamic-plus-out-of-scope",
+        "rep": 2,
+        "score": 0.8,
+        "criteria": {
+          "durability": 1,
+          "correctness": 1,
+          "scope": 0
+        }
+      },
+      {
+        "diff": "03-dynamic-plus-out-of-scope",
+        "rep": 3,
+        "score": 0.8,
+        "criteria": {
+          "durability": 1,
+          "correctness": 1,
+          "scope": 0
+        }
+      },
+      {
+        "diff": "03-dynamic-plus-out-of-scope",
+        "rep": 4,
+        "score": 0.8,
+        "criteria": {
+          "durability": 1,
+          "correctness": 1,
+          "scope": 0
+        }
+      },
+      {
+        "diff": "04-empty",
+        "rep": 1,
+        "score": 0,
+        "criteria": {
+          "durability": 0,
+          "correctness": 0,
+          "scope": 0
+        }
+      },
+      {
+        "diff": "04-empty",
+        "rep": 2,
+        "score": 0,
+        "criteria": {
+          "durability": 0,
+          "correctness": 0,
+          "scope": 0
+        }
+      },
+      {
+        "diff": "04-empty",
+        "rep": 3,
+        "score": 0,
+        "criteria": {
+          "durability": 0,
+          "correctness": 0,
+          "scope": 0
+        }
+      },
+      {
+        "diff": "04-empty",
+        "rep": 4,
+        "score": 0,
+        "criteria": {
+          "durability": 0,
+          "correctness": 0,
+          "scope": 0
+        }
+      }
+    ]
+  },
+  "date": "2026-08-16"
+}
