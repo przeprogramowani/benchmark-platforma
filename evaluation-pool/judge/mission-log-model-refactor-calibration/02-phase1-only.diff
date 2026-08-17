@@ -1,0 +1,108 @@
+diff --git a/apps/edu-platform/src/models/missionLog/contract.test.ts b/apps/edu-platform/src/models/missionLog/contract.test.ts
+new file mode 100644
+index 00000000..0c427b03
+--- /dev/null
++++ b/apps/edu-platform/src/models/missionLog/contract.test.ts
+@@ -0,0 +1,29 @@
++import { describe, expect, it } from 'vitest';
++import { MISSION_LOG_LESSON_CATALOG } from './lessonCatalog';
++import {
++  MAX_GENERATIONS_PER_LESSON,
++  MISSION_LOG_ERROR_MESSAGES,
++  MISSION_LOG_GENERIC_ERROR_MESSAGE,
++  TOTAL_MISSION_LOG_BADGES,
++} from './contract';
++
++describe('mission log contract', () => {
++  it('TOTAL_MISSION_LOG_BADGES follows the lesson catalog', () => {
++    expect(TOTAL_MISSION_LOG_BADGES).toBe(MISSION_LOG_LESSON_CATALOG.length);
++  });
++
++  it('exposes the per-lesson generation limit', () => {
++    expect(MAX_GENERATIONS_PER_LESSON).toBeGreaterThan(0);
++  });
++
++  it('every error code has a non-empty message', () => {
++    for (const [code, message] of Object.entries(MISSION_LOG_ERROR_MESSAGES)) {
++      expect(message, `missing message for ${code}`).toBeTruthy();
++      expect(message.trim().length, `blank message for ${code}`).toBeGreaterThan(0);
++    }
++  });
++
++  it('has a generic fallback message', () => {
++    expect(MISSION_LOG_GENERIC_ERROR_MESSAGE.trim().length).toBeGreaterThan(0);
++  });
++});
+diff --git a/apps/edu-platform/src/models/missionLog/contract.ts b/apps/edu-platform/src/models/missionLog/contract.ts
+new file mode 100644
+index 00000000..56f77730
+--- /dev/null
++++ b/apps/edu-platform/src/models/missionLog/contract.ts
+@@ -0,0 +1,67 @@
++import { MISSION_LOG_LESSON_CATALOG } from './lessonCatalog';
++
++export type { ParticipationBadgeResponse } from '@/server/badges/badgesApiClient';
++import type { ParticipationBadgeResponse } from '@/server/badges/badgesApiClient';
++
++/** Ile razy jedna lekcja może wygenerować odznakę. */
++export const MAX_GENERATIONS_PER_LESSON = 2;
++
++/** Liczba odznak Mission Log — pochodna katalogu lekcji, nigdy literał. */
++export const TOTAL_MISSION_LOG_BADGES = MISSION_LOG_LESSON_CATALOG.length;
++
++/**
++ * Kody błędów emitowane przez Mission Log API — verbatim, dokładnie tak,
++ * jak trafiają na drut. Niekonsekwencje nazewnicze ('Unauthorized' vs
++ * 'quota_exhausted') są celowe: ujednolicenie byłoby zmianą API.
++ */
++export type MissionLogApiErrorCode =
++  | 'Invalid JSON body'
++  | 'Invalid request body'
++  | 'Unauthorized'
++  | 'Forbidden'
++  | 'ACCESS_UNAVAILABLE'
++  | 'lesson_not_found'
++  | 'avatar_missing'
++  | 'module_locked'
++  | 'quota_exhausted'
++  | 'upstream_busy'
++  | 'upstream_origin_forbidden'
++  | 'upstream_error';
++
++/** Komunikat dla odpowiedzi bez rozpoznanego kodu błędu. */
++export const MISSION_LOG_GENERIC_ERROR_MESSAGE =
++  'Nie udało się wygenerować odznaki. Spróbuj ponownie.';
++
++/**
++ * Polskie komunikaty per kod. Record<kod, string> celowo: nowy kod
++ * w unii bez komunikatu = błąd kompilacji.
++ */
++export const MISSION_LOG_ERROR_MESSAGES: Record<MissionLogApiErrorCode, string> = {
++  'Invalid JSON body': MISSION_LOG_GENERIC_ERROR_MESSAGE,
++  'Invalid request body': MISSION_LOG_GENERIC_ERROR_MESSAGE,
++  Unauthorized: 'Sesja wygasła. Zaloguj się ponownie.',
++  Forbidden: 'Brak dostępu do 10xDevs 3.0.',
++  ACCESS_UNAVAILABLE: MISSION_LOG_GENERIC_ERROR_MESSAGE,
++  lesson_not_found: MISSION_LOG_GENERIC_ERROR_MESSAGE,
++  avatar_missing: MISSION_LOG_GENERIC_ERROR_MESSAGE,
++  module_locked: 'Moduł jest jeszcze zablokowany.',
++  quota_exhausted: 'Limit wykorzystany.',
++  upstream_busy: 'Spróbuj za chwilę — generator jest chwilowo zajęty.',
++  upstream_origin_forbidden: MISSION_LOG_GENERIC_ERROR_MESSAGE,
++  upstream_error: MISSION_LOG_GENERIC_ERROR_MESSAGE,
++};
++
++export interface GenerateBadgeSuccessResponse {
++  badgeImageUrl: string;
++  count: number;
++  remaining: number;
++}
++
++export interface MissionLogErrorResponse {
++  error: MissionLogApiErrorCode;
++  unlocksAt?: string | null;
++}
++
++export interface ParticipationBadgeSuccessResponse {
++  badge: ParticipationBadgeResponse | null;
++}

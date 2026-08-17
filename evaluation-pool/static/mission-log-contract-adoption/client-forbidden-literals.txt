@@ -1,0 +1,7 @@
+const TOTAL_BADGES
+count: 2,
+Moduł jest jeszcze zablokowany
+Spróbuj za chwilę — generator jest chwilowo zajęty
+Sesja wygasła. Zaloguj się ponownie.
+Brak dostępu do 10xDevs 3.0.
+Nie udało się wygenerować odznaki. Spróbuj ponownie.
