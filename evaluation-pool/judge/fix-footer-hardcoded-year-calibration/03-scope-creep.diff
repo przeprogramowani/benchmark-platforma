@@ -1,0 +1,32 @@
+diff --git a/apps/edu-platform/src/components/Footer.astro b/apps/edu-platform/src/components/Footer.astro
+index 3419360f..4f9a3c22 100644
+--- a/apps/edu-platform/src/components/Footer.astro
++++ b/apps/edu-platform/src/components/Footer.astro
+@@ -1,5 +1,6 @@
+ ---
+ import logo from '@/images/generic/logo-white.png';
++import { getCurrentYear } from '@/utils/getCurrentYear';
+ ---
+ 
+ <footer class='border-t border-gray-800 py-8'>
+@@ -41,8 +42,8 @@ import logo from '@/images/generic/logo-white.png';
+       </div>
+       <img src={logo.src} alt='Przeprogramowani.pl' class='mx-auto max-w-sm md:max-w-md w-64 mb-6' loading='lazy' />
+     </nav>
+-    <p class='mt-10 text-center text-sm leading-5 text-gray-400 hover:text-whit transition-colorse'>
+-      &copy; 2025 Przeprogramowani
++    <p class='mt-10 text-center text-sm leading-5 text-gray-400 hover:text-white transition-colors'>
++      &copy; {getCurrentYear()} Przeprogramowani
+     </p>
+   </div>
+ </footer>
+diff --git a/apps/edu-platform/src/utils/getCurrentYear.ts b/apps/edu-platform/src/utils/getCurrentYear.ts
+new file mode 100644
+index 00000000..e7a99eb3
+--- /dev/null
++++ b/apps/edu-platform/src/utils/getCurrentYear.ts
+@@ -0,0 +1,4 @@
++/** Zwraca bieżący rok kalendarzowy. */
++export function getCurrentYear(): number {
++  return new Date().getFullYear();
++}
