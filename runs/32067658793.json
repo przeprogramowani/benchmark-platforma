@@ -1,0 +1,155 @@
+{
+  "generated_at": "2026-08-17T21:11:52.145Z",
+  "run_dir": "/home/runner/work/benchmark-platforma/benchmark-platforma/out/run",
+  "pass_threshold": 0.7,
+  "cost_scope": "trials",
+  "total_cost_usd": 8.794033352000001,
+  "total_judge_cost_usd": 1.56442,
+  "trials": 27,
+  "eras": [
+    {
+      "stamps": {
+        "template_version": "0.13.0",
+        "scoring_version": "2",
+        "task_hash": "a80ddd8c95ecec0c84e015cad85cf1406d99db542ba347343984ef2067bd0a4d",
+        "judge_model": "openrouter/anthropic/claude-opus-5",
+        "rubric_version": "footer-current-year@1",
+        "memory_limit_mb": null
+      },
+      "rows": [
+        {
+          "model": "openrouter/anthropic/claude-sonnet-5",
+          "task": "fix-footer-hardcoded-year",
+          "trials": 3,
+          "median_total": 1,
+          "median_cost_usd": 0.38727069999999997,
+          "median_judge_cost_usd": 0.021585,
+          "median_duration_s": 245.1,
+          "passed": 3,
+          "pass_at_1": 1,
+          "pass_at_k": 1
+        },
+        {
+          "model": "openrouter/qwen/qwen3.8-27b",
+          "task": "fix-footer-hardcoded-year",
+          "trials": 3,
+          "median_total": 0.55,
+          "median_cost_usd": 0.07322665,
+          "median_judge_cost_usd": 0.02081,
+          "median_duration_s": 141.8,
+          "passed": 0,
+          "pass_at_1": 0,
+          "pass_at_k": 0
+        },
+        {
+          "model": "openrouter/z-ai/glm-5.2",
+          "task": "fix-footer-hardcoded-year",
+          "trials": 3,
+          "median_total": 0.55,
+          "median_cost_usd": 0.009914408000000001,
+          "median_judge_cost_usd": 0.02096,
+          "median_duration_s": 16.4,
+          "passed": 0,
+          "pass_at_1": 0,
+          "pass_at_k": 0
+        }
+      ]
+    },
+    {
+      "stamps": {
+        "template_version": "0.13.0",
+        "scoring_version": "2",
+        "task_hash": "8d9aa31c147389fd0eb381de928169d0ef67981aea954b946cdf9457ae56e21b",
+        "judge_model": "openrouter/anthropic/claude-opus-5",
+        "rubric_version": "toc-sibling-nesting@1",
+        "memory_limit_mb": null
+      },
+      "rows": [
+        {
+          "model": "openrouter/anthropic/claude-sonnet-5",
+          "task": "fix-toc-sibling-nesting",
+          "trials": 3,
+          "median_total": 1,
+          "median_cost_usd": 0.4791246,
+          "median_judge_cost_usd": 0.024205,
+          "median_duration_s": 199.3,
+          "passed": 3,
+          "pass_at_1": 1,
+          "pass_at_k": 1
+        },
+        {
+          "model": "openrouter/qwen/qwen3.8-27b",
+          "task": "fix-toc-sibling-nesting",
+          "trials": 3,
+          "median_total": 1,
+          "median_cost_usd": 0.19715590000000002,
+          "median_judge_cost_usd": 0.023875,
+          "median_duration_s": 287.4,
+          "passed": 3,
+          "pass_at_1": 1,
+          "pass_at_k": 1
+        },
+        {
+          "model": "openrouter/z-ai/glm-5.2",
+          "task": "fix-toc-sibling-nesting",
+          "trials": 3,
+          "median_total": 1,
+          "median_cost_usd": 0.06115487,
+          "median_judge_cost_usd": 0.023825,
+          "median_duration_s": 217.8,
+          "passed": 3,
+          "pass_at_1": 1,
+          "pass_at_k": 1
+        }
+      ]
+    },
+    {
+      "stamps": {
+        "template_version": "0.13.0",
+        "scoring_version": "2",
+        "task_hash": "0d94e1192dda15ce4f41b380f5264e061ceb8ace3b30b976e545ee24d8270699",
+        "judge_model": "openrouter/anthropic/claude-opus-5",
+        "rubric_version": "mission-log-model-refactor@1",
+        "memory_limit_mb": 6144
+      },
+      "rows": [
+        {
+          "model": "openrouter/qwen/qwen3.8-27b",
+          "task": "mission-log-model-refactor",
+          "trials": 3,
+          "median_total": 1,
+          "median_cost_usd": 0.52935285,
+          "median_judge_cost_usd": 0.13792,
+          "median_duration_s": 1120.9,
+          "passed": 2,
+          "pass_at_1": 0.6666666666666667,
+          "pass_at_k": 1
+        },
+        {
+          "model": "openrouter/z-ai/glm-5.2",
+          "task": "mission-log-model-refactor",
+          "trials": 3,
+          "median_total": 1,
+          "median_cost_usd": 0.271975018,
+          "median_judge_cost_usd": 0.13565,
+          "median_duration_s": 1160.5,
+          "passed": 2,
+          "pass_at_1": 0.6666666666666667,
+          "pass_at_k": 1
+        },
+        {
+          "model": "openrouter/anthropic/claude-sonnet-5",
+          "task": "mission-log-model-refactor",
+          "trials": 3,
+          "median_total": 0.99,
+          "median_cost_usd": 0.9680000000000001,
+          "median_judge_cost_usd": 0.137375,
+          "median_duration_s": 524.4,
+          "passed": 2,
+          "pass_at_1": 0.6666666666666667,
+          "pass_at_k": 1
+        }
+      ]
+    }
+  ]
+}
