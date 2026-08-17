@@ -1,0 +1,46 @@
+# Naprawa buga: spis treści lekcji źle zagnieżdża nagłówki (seed w overlayu).
+# Schemat: .bench-kit/runner/src/schemas/task.ts
+
+repo: przeprogramowani-edu
+
+# Ostatni commit na origin/master z zielonym CI (Platform CI / Deploy).
+# Bug NIE występuje na tym commicie naturalnie — wprowadza go overlay
+# (buildTocHierarchy.ts z `>` zamiast `>=` w warunku zdejmowania ze
+# stosu), więc to zadanie — w odróżnieniu od fix-footer-hardcoded-year —
+# pokazuje mechanikę overlaya.
+commit: "c4f769abaa595c24119b8dd420dbefcc8c6c6ce0"
+
+# Naprowadzenie kierunkowe: prompt nazywa obszar (logika spisu treści
+# lekcji w edu-platform), bez plików i symboli. Krótszy timeout niż przy
+# naprowadzeniu produktowym footer-taska — lokalizacja jest tańsza,
+# a prompt każe potwierdzić naprawę testami jednostkowymi obszaru.
+timeout_s: 600
+
+evaluation:
+  - tests/toc-sibling-nesting
+  - static/lint
+  - judge/toc-sibling-nesting
+
+weights:
+  # Miara pracy: ukryty test zachowania funkcji (skala 0/0.5/1 —
+  # odróżnia brak naprawy, łatkę na najprostszy przypadek równych
+  # poziomów i naprawę przyczyny w warunku stosu).
+  tests: 0.6
+  # Jakość zmiany: minimalność diffu, naprawa przyczyny zamiast
+  # obejścia w warstwie renderowania, brak "uzieleniania" zastanych
+  # testów repo przez ich modyfikację.
+  judge: 0.4
+  # Guard, nie różnicowanie: zielony niezależnie od jakości poprawki.
+  static: 0
+  e2e: 0
+
+# Zachowanie asercji nie-LLM-owych na stanie startowym (pusty diff).
+# Uwaga: własne testy repo (vitest) też są czerwone na starcie — to
+# celowe, agent może nimi zlokalizować buga; nie są częścią oceny.
+reference:
+  tests/toc-sibling-nesting: fail
+  static/lint: pass
+
+# Overlay podmienia cały plik buildTocHierarchy.ts — pin starzeje się,
+# gdy repo bazowe zmieni ten plik (overlay cofnąłby cudze zmiany).
+expires: "2027-02-28"

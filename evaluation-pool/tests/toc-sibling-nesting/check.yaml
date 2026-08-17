@@ -1,0 +1,22 @@
+# Asercja tests/toc-sibling-nesting — zadanie fix-toc-sibling-nesting.
+# Schemat: .bench-kit/runner/src/schemas/check.ts
+#
+# Dwa checki przy `score: fraction` dają skalę 0 / 0.5 / 1: pierwszy
+# łapie sam seed (rodzeństwo zagnieżdżane jedno pod drugim), drugi
+# odróżnia naprawę przyczyny (poprawny warunek zdejmowania ze stosu)
+# od łatki obsługującej tylko najprostszy przypadek równych poziomów.
+#
+# Import testowanego modułu idzie przez alias `@/` z astro.config.mjs,
+# stąd konfiguracja vitest przez getViteConfig i instalacja zależności
+# repo w setup.sh (wspólnym dla obu checków — drugi trafia już na
+# gotowe node_modules).
+score: fraction
+checks:
+  - name: toc-same-level-siblings
+    run: |
+      . "$ASSERTION_DIR"/setup.sh
+      pnpm exec vitest run --config .bench-vitest.config.ts -t 'rodzeństwo tego samego poziomu jest rodzeństwem'
+  - name: toc-return-to-shallower-level
+    run: |
+      . "$ASSERTION_DIR"/setup.sh
+      pnpm exec vitest run --config .bench-vitest.config.ts -t 'powrót do płytszego poziomu odbudowuje właściwych rodziców'
