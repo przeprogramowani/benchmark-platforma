@@ -56,6 +56,9 @@ się komentarzem lub issue z delegacją naprawy — nigdy zmianą wyników.
   `patch.diff` (praca agenta vs commit startowy), `metrics.json`
   (koszt/tokeny/czas; `"incomplete": true` = adapter nie znalazł
   danych), `container.log` (istnieje tylko przy awarii infrastruktury),
+  `signal.json` (istnieje tylko gdy agent zginął od sygnału także po
+  retry — nazwa sygnału, hint, limit pamięci, ogon logu; taka próba ma
+  `resource_kill: true` w trial.json i jest wyłączona z oceny),
   `eval-plan.json`, `checks.json` (score per asercja nie-LLM-owa),
   `judge.json` (werdykty + surowa odpowiedź sędziego), `result.json`
   (scores, total, stemple er).
@@ -90,6 +93,7 @@ różnica zwykle wskazuje jedną składową, nie wszystkie.
 |---|---|---|
 | pusty/prawie pusty `patch.diff` | `agent.log` | model nie wywołuje narzędzi (np. literalny `<tool_code` wypisany jako tekst) → wina modelu; prompt niejasny → wina zadania |
 | `execution.json` exit 124 | `agent.log` (czy był postęp) | kręcenie się w kółko → wina modelu; robił postęp, zabrakło czasu → timeout za krótki, wina zadania |
+| `execution.json` exit 137 (lub inny 128+N) bez timeoutu | `signal.json`, ogon `agent.log` | agent zabity sygnałem — SIGKILL w trakcie instalacji/builda = wyczerpanie zasobów → wina infrastruktury (runner od 0.11.0 sam to klasyfikuje: retry, `resource_kill`, wyłączenie z oceny; brak `signal.json` = run sprzed tej wersji, klasyfikuj ręcznie) |
 | istnieje `container.log` | `container.log`, `execution.json` | kontener padł przed agentem → wina infrastruktury |
 | `trial.json` z `provider_error: true` | `agent.log` (5xx/429), `provider-error-attempt-1/` | przejściowa awaria providera; runner zrobił 1 retry — jeśli i on padł, wina infrastruktury (provider), nie modelu |
 | `metrics.json` incomplete | `agent.log`, storage OpenCode | adapter/wersja OpenCode → wina infrastruktury |
@@ -100,9 +104,29 @@ różnica zwykle wskazuje jedną składową, nie wszystkie.
 | niepusty `patch.diff`, a judge 0 | nagłówki hunków (`@@ -1,N +1,M @@` na całym pliku) | destrukcyjne nadpisanie zamiast edycji przyrostowej → wina modelu (werdykt sędziego to potwierdzi w uzasadnieniach) |
 
 Reprodukcje z prawej kolumny wykonuj wg zasad 2 i 5 (dowód komendą,
-koszty jawne).
+koszty jawne) — z dwoma zastrzeżeniami, bo reprodukcja to najdroższa
+czynność w całym skillu:
+
+- **Wyczerpaj artefakty przed pierwszą reprodukcją.** Artefakty są już
+  zapłacone; reprodukcja kosztuje kontener albo wywołania sędziego.
+  Bardzo często pełna diagnoza jest w `patch.diff` i ogonie logu — np.
+  sam kod wyjścia procesu plus ostatnie linie logu jednoznacznie
+  wskazują wyczerpanie zasobów, bez uruchamiania czegokolwiek.
+- **Grupuj reprodukcje.** Jeśli musisz odtworzyć asercję lub werdykt,
+  zrób to dla wszystkich podejrzanych prób naraz, nie próba po próbie
+  w miarę czytania: `bench assert --task <t> --patch <trial-1/patch.diff>
+  --patch <trial-2/patch.diff> …` to jedno wejście do środowiska,
+  N wyników; werdykty sędziego puszczaj równolegle w tle.
 
 ### 5. Klasyfikacja i delegacja
+
+**Reguła stopu:** klasa przyczyny jest wyjściem skilla — gdy dowody
+wystarczają do jej wskazania, kończysz. Dokładniejsza analiza wewnątrz
+klasy należy do skilla naprawczego, który i tak zacznie od własnych
+pomiarów. I **diagnozy powtarzalne kieruj do skilla źródłowego**: jeśli
+ta sama klasa awarii wraca (wzorzec, nie incydent), wyjściem triage'u
+jest poprawka procedury w skillu, który ją produkuje — inaczej płacisz
+ten sam triage co run.
 
 - **Wina modelu** — wynik zostaje, leaderboard mówi prawdę. W wyjściu
   opisz wzorzec zachowania (to cenniejsze niż liczba: "gubi tool
@@ -122,3 +146,23 @@ Komentarz (przy PR/runie) albo issue wg
 klasa → rekomendacja → koszt triage. Scoringu nie zmieniasz (zasada 1);
 jeśli naprawa jest pilna, uruchom właściwy skill osobno, po zgodzie
 użytkownika.
+
+### 7. Następny krok
+
+Zakończ odpowiedź podsumowującą sekcją **Następny krok**: stan jednym
+zdaniem (co zdiagnozowane, gdzie issue), **jedna** rekomendacja
+z jednozdaniowym uzasadnieniem, maksymalnie dwie alternatywy z ceną,
+oraz — oddzielnie — to, co czeka na decyzję człowieka. Typowe przejścia
+wg klasy:
+
+- **wina zadania** → bench-refresh albo bench-task — zależnie od tego,
+  czy naprawa zachowuje intencję zadania;
+- **wina rubryki** → bench-rubric;
+- **wina infrastruktury** → run do powtórzenia po naprawie — wyniki
+  dotkniętych prób są nieinterpretowalne;
+- **wina modelu** → nic w benchmarku — to jest odpowiedź, nie problem
+  do naprawy.
+
+Nie proponuj kolejnego runu, dopóki poprzedni nie jest zinterpretowany:
+jeśli w runie były próby zabite przez infrastrukturę, drugi run powtórzy
+tę samą awarię i tę samą fakturę.

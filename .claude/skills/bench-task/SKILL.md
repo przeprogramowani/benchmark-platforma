@@ -57,9 +57,12 @@ uruchomiłeś na wersji referencyjnej** — do tego służą `bench assert`,
 Uruchamiane z korzenia instancji: `node --experimental-strip-types
 .bench-kit/runner/src/index.ts <komenda>` (dalej: `bench <komenda>`).
 
-- `bench assert <ref...> --task <nazwa> [--no-overlay] [--patch <plik>]` —
-  asercje nie-LLM-owe na stanie startowym zadania (repo@pin + overlay);
+- `bench assert <ref...> --task <nazwa> [--no-overlay] [--patch <plik>]...`
+  — asercje nie-LLM-owe na stanie startowym zadania (repo@pin + overlay);
   `--no-overlay` = czysta referencja, `--patch` = z nałożonym diffem.
+  `--patch` można podać **wielokrotnie** — komplet diffów (wzorzec,
+  warianty, pusty) ocenia jedno wejście do kontenera; `--json` daje wynik
+  strukturalny na stdout zamiast tabelki do parsowania.
   Exit 0 gdy wszystkie score 1, exit 1 gdy nie — sprawdzasz oba kierunki.
   Uwaga: kod wyjścia czytaj z `$?` bezpośrednio po komendzie, **bez
   potoku** — `bench assert … | tail` podmienia `$?` na kod `tail`.
@@ -83,6 +86,21 @@ interaktywny wywiad mechanizmem pytań twojego narzędzia
 w rozmowie) i zapisz sobie odpowiedzi, zanim napiszesz cokolwiek.
 Nie zgaduj i nie przyjmuj po cichu domyślnych: źle dobrany poziom
 naprowadzenia czy timeout zmienia, **co** zadanie mierzy.
+
+Zadaj **komplet pytań w jednym bloku**, nie sekwencyjnie. Poziom
+naprowadzenia, trudność, timeout i składowe oceny są od siebie zależne —
+użytkownik odpowiada na nie lepiej, widząc je razem, a ty oszczędzasz
+rundy dopytywania.
+
+**Jeśli wywołanie zawiera już opis zadania**, nie zaczynaj wywiadu od
+zera: wyprowadź z opisu propozycje odpowiedzi na poniższe punkty
+i przedstaw je z oznaczeniem, co jest wywnioskowane z opisu, a czego
+w nim nie ma. Pytania zadawaj **tylko** o luki i niejednoznaczności;
+o poziom naprowadzenia promptu pytaj zawsze, chyba że opis rozstrzyga
+go wprost (użytkownik opisujący zadanie mówi zwykle *co* jest do
+zrobienia, nie *ile prompt ma zdradzać* — a to zmienia, co zadanie
+mierzy). Wnioski z opisu to propozycje, nie decyzje — bramka
+akceptacji na końcu kroku obowiązuje bez zmian.
 
 - **Co zadanie mierzy**: implementacja funkcji / naprawa buga / refaktor /
   dokumentacja. Jedno zadanie = jedna intencja.
@@ -147,6 +165,14 @@ zmiany, jakiekolwiek przecieki z materiałów oceny (zasada 2). Prompt
 to **jedyne** wejście agenta — wszystko, czego nie napiszesz, agent musi
 wywnioskować z kodu.
 
+Dopisz do granic promptu **oczekiwanie wobec weryfikacji** — spójne
+z polityką ustaloną w wiringu instancji: czy agent ma weryfikować pracę
+uruchomieniem projektu/testów, czy ma tego nie robić. Prompt, który tego
+nie mówi, zostawia agentowi kosztowną decyzję, a tobie niejednoznaczne
+wyniki: jeden model kończy w kilkanaście sekund bez sprawdzenia, drugi
+zużywa minuty i zasoby na uruchomienie projektu — mierzysz wtedy
+temperament, nie umiejętność.
+
 ### 5. Asercje
 
 Najpierw przejrzyj `evaluation-pool/` pod **reużycie** — asercje są
@@ -154,6 +180,31 @@ wspólne dla wielu zadań. Brakujące twórz **w puli** (katalog
 `evaluation-pool/<typ>/<nazwa>/check.yaml`), nigdy w katalogu zadania.
 Ukryte pliki testów trzymaj w katalogu asercji (w kontenerze oceny są
 pod `$ASSERTION_DIR`).
+
+Wejście do kontenera oceny odtwarza środowisko od zera i kosztuje minuty
+— pracuj więc drabiną bramek, od najtańszej do najdroższej:
+
+- **Prototypuj asercję poza kontenerem**, w lokalnym klonie
+  `.repos/<nazwa>/`, aż działa. Pętla lokalna jest o rząd wielkości
+  szybsza niż kontenerowa; do kontenera wchodzisz z gotową asercją,
+  nie z hipotezą.
+- **Wytwórz od razu komplet diffów**: wzorzec + warianty, które
+  przewidujesz dla kalibracji rubryki (zwykle: naprawa częściowa /
+  objawowa, poprawna naprawa z nadmiarowym zakresem, poprawna naprawa
+  nieidiomatyczna). Kontekst repo masz otwarty raz — to moment, w którym
+  warianty kosztują minuty zamiast osobnej sesji. Zapisz je od razu
+  w `evaluation-pool/judge/<zadanie>-calibration/`.
+- **Każdy diff przepuść przez tanie bramki**, zanim cokolwiek zmierzysz:
+  aplikuje się na stan startowy → kompiluje się → przechodzi (lub nie)
+  asercję zgodnie z twoim zamiarem. Diff, który wygląda dobrze i nie
+  działa, jest gorszy niż jego brak.
+- **Jedno wejście do kontenera na komplet materiału**, nie wywołanie per
+  artefakt: `bench assert --task <nazwa> --patch wzorzec.diff --patch
+  wariant-a.diff --patch pusty.diff` ocenia cały zbiór w jednym wejściu
+  (pusty plik diffa = stan startowy). Jeśli mimo wszystko musisz wejść
+  kilka razy, puść wywołania równolegle w tle i zbierz wyniki razem
+  (pamiętając: brak wyjścia z komendy w tle to "jeszcze trwa" ALBO
+  "padło bez słowa" — rozstrzygnij, zanim zbudujesz na tym wniosek).
 
 Każda asercja przechodzi zasadę "testuj na referencji" (zasada 3):
 
@@ -163,7 +214,9 @@ Każda asercja przechodzi zasadę "testuj na referencji" (zasada 3):
 | wzorcowe rozwiązanie | wszystko zielone | `bench assert --task <nazwa> --patch <wzorzec.diff>` |
 
 Wzorcowe rozwiązanie przygotuj sam (diff względem stanu startowego)
-i zachowaj — przyda się do kalibracji rubryki (bench-rubric). Wyniki
+i zachowaj razem z wariantami kalibracyjnymi (patrz drabina bramek
+wyżej) — bench-rubric zaczyna od tego zbioru zamiast od ponownego
+wchodzenia w repo. Wyniki
 zapisz w `reference` w task.yaml: guardy (lint/build) → `pass`, miary
 pracy (ukryte testy) → `fail`. Pamiętaj o lekcji założycielskiej: asercja
 musi sama instalować swoje zależności (etap oceny może używać sieci)
@@ -181,7 +234,10 @@ albo wylatuje z `evaluation[]`. Suma wag = 1.
 
 ### 7. Samosprawdzenie
 
-Kolejno, każde musi przejść zanim pójdziesz dalej:
+Kolejność jest celowo tania→droga: `validate` przed asercjami na
+wzorcu, asercje przed sędzią, sędzia przed pełnym runem — pełny run jest
+ostatni, bo tylko on wymaga wszystkiego naraz. Kolejno, każde musi
+przejść zanim pójdziesz dalej:
 
 1. `bench validate --assert` — zielone (deklaracje `reference` zgodne).
    Bramka obejmuje całą instancję — jeśli czerwień pochodzi z plików
@@ -207,3 +263,19 @@ z kroków 3/5/7), skutki dla porównywalności (zasada 7), koszt
 samosprawdzenia. Wzorcowego rozwiązania **nie** commituj do `tasks/`
 (przeciekłoby do workspace'u agenta) — jeśli ma zostać w repo, jego
 miejsce to `evaluation-pool/judge/<zadanie>-calibration/`.
+
+### 9. Następny krok
+
+Zakończ odpowiedź podsumowującą sekcją **Następny krok**: stan instancji
+jednym zdaniem (co w PR, co niedokończone), **jedna** rekomendacja
+z jednozdaniowym uzasadnieniem, maksymalnie dwie alternatywy z ceną,
+oraz — oddzielnie — to, co czeka na decyzję człowieka (merge PR-a to
+zawsze człowiek). Typowe przejścia:
+
+- **Zadanie ze składową sędziego** → **bench-rubric na tej samej
+  gałęzi, PRZED mergem** — kalibracja świeżej rubryki przed pierwszym
+  użyciem nie zamyka ery; kalibracja po policzonych wynikach zamyka ją
+  i unieważnia je.
+- **Zadanie bez składowej sędziego** → merge + pełny run; przy jednym
+  zadaniu w instancji — kolejne bench-task, bo ranking na jednym
+  zadaniu to szum.

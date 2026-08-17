@@ -1,9 +1,10 @@
 {
-  "templateVersion": "0.10.1",
+  "templateVersion": "0.11.0",
   "templateRef": "latest",
   "templateSource": "https://github.com/przeprogramowani/10x-bench-kit",
   "initializedAt": "2026-08-17T08:52:06.800Z",
   "tool": "claude-code",
+  "updatedAt": "2026-08-17T11:33:22.190Z",
   "detectedBaseRepo": {
     "rootDir": "/Users/psmyrdek/dev/przeprogramowani-edu",
     "name": "przeprogramowani-edu",
