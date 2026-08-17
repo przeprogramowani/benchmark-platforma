@@ -1,18 +1,32 @@
 ---
-version: "0-draft"
+version: "1"
 weights:
   root_cause: 0.45
   scope: 0.4
   quality: 0.15
 ---
 
-# Rubryka: toc-sibling-nesting (v0-draft)
+# Rubryka: toc-sibling-nesting (v1)
 
-Szkic rubryki dla zadania `fix-toc-sibling-nesting` — **przed kalibracją**
-(bench-rubric na zbiorze `evaluation-pool/judge/fix-toc-sibling-nesting-calibration`).
-Struktura i lekcje startowe przeniesione z `footer-current-year` v1:
-`root_cause` waży więcej niż `scope`, a `scope` i `quality` mają twarde
-dna przy braku naprawy.
+Rubryka dla zadania `fix-toc-sibling-nesting`, skalibrowana na zbiorze
+`evaluation-pool/judge/fix-toc-sibling-nesting-calibration` (5 diffów
+o znanej jakości). Struktura i lekcje startowe przeniesione
+z `footer-current-year` v1: `root_cause` waży więcej niż `scope`,
+a `scope` i `quality` mają twarde dna przy braku naprawy.
+
+Co zmierzył pomiar wobec szkicu v0 (**wagi bez zmian**):
+
+- **`scope` = 0.0 zlewało dwa różne przewinienia.** Kotwica wymieniała
+  „przepisanie innych funkcji modułu" obok „modyfikacji istniejących
+  testów", więc `03-scope-creep` (poprawna naprawa + przy okazji
+  przepisany `buildTocMap`) dostawał tę samą maksymalną karę co
+  `04-test-mutation` (zero naprawy, uzielenione testy). Efekt:
+  **odwrócona najciaśniejsza para zbioru** — łatka objawowa `02` (0.685)
+  wychodziła nad poprawną naprawą `03` (0.563), czyli dokładnie odwrotnie
+  do tezy zadania.
+- **`quality` nie miało dna dla łatki objawowej.** Dno przeniesiono z v1
+  footera tylko dla `root_cause` = 0.0, więc `02` zbierał `quality` 0.40
+  za elegancję rozwiązania, które zostawia błędny warunek w algorytmie.
 
 Podział ról ze składową `tests`: ukryty test mierzy już **zachowanie**
 funkcji budującej drzewo spisu treści (rodzeństwo równych poziomów,
@@ -47,12 +61,18 @@ zachowanie.
    Kotwice ważą **ryzyko zmiany, nie jej liczbę**:
    - 1.0 — zmiana ograniczona do logiki budowania hierarchii; pozostałe
      funkcje modułu, komponenty spisu treści i inne pliki nietknięte,
-   - 0.5 — dodatki nieproszone, ale nieryzykowne: przeformatowany
-     sąsiedni fragment, dopisany komentarz, drobny nowy helper bez
-     ingerencji w istniejącą strukturę,
-   - 0.0 — ingerencja ponad naprawę: przepisanie innych funkcji modułu,
-     zmiany w komponentach lub innych plikach, modyfikacja istniejących
-     testów, nowa zależność; **albo brak zmiany do oceny**: przy
+   - 0.5 — nadgorliwość **przy prawdziwej naprawie przyczyny**
+     (`root_cause` = 1.0): dodatki nieproszone, ale mieszczące się
+     w module zgłoszenia — przeformatowany sąsiedni fragment, dopisany
+     komentarz, nowy helper lub eksport, a także przepisanie innej
+     funkcji tego samego modułu **bez zmiany jej zachowania**. To wada
+     do wytknięcia w review, nie złamanie zlecenia — i musi kosztować
+     mniej niż zostawienie błędu w algorytmie,
+   - 0.0 — złamanie zlecenia albo brak zlecenia do wykonania: modyfikacja
+     istniejących testów pod błędne zachowanie (jawnie zakazana
+     w prompcie), zmiany w komponentach lub innych plikach aplikacji,
+     zmiana zachowania widocznego dla użytkownika ponad naprawę buga,
+     nowa zależność; **albo brak zmiany do oceny**: przy
      `root_cause` = 0.0 `scope` wynosi 0.0 — diff, który niczego nie
      naprawia, nie dostaje punktów za to, że niczego nie zepsuł.
 3. **quality** (waga 0.15) — czy naprawa jest idiomatyczna i spójna
@@ -62,8 +82,11 @@ zachowanie.
    - 0.5 — działa, ale z odstępstwami kosmetycznymi lub nadmiarową
      komplikacją (dodatkowe rozgałęzienia tam, gdzie wystarczał warunek),
    - 0.0 — rozwiązanie obce projektowi (np. przebudowa algorytmu,
-     korekta drzewa po fakcie) **albo brak rozwiązania do oceny**: przy
-     `root_cause` = 0.0 `quality` wynosi 0.0.
+     korekta drzewa po fakcie) **albo brak pełnego rozwiązania do
+     oceny**: przy `root_cause` ≤ 0.5 (algorytm dalej błędny albo łatka
+     obok wciąż błędnej pętli) `quality` wynosi 0.0 — nie ma naprawy
+     przyczyny, której idiomatyczność dałoby się ocenić, a elegancja
+     obejścia nie jest zasługą.
 
 ## Format odpowiedzi sędziego (wymagany JSON)
 

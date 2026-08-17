@@ -33,8 +33,57 @@ Oczekiwana kolejność: `01 > 03 > 02 > 04 ≥ 05`.
   wprost (tests i tak daje 0).
 - **`05` na zerze** — próg zaliczenia ma być nieosiągalny pustym diffem.
 
+## Wynik kalibracji (runda `v1-final`, rubryka v1, 5 powtórzeń)
+
+| diff | min | med | max | rozrzut | oczekiwanie | |
+|---|---|---|---|---|---|---|
+| 01-reference | 1.000 | 1.000 | 1.000 | 0.000 | 0.95–1.0 | ✅ |
+| 03-scope-creep | 0.800 | 0.800 | 0.800 | 0.000 | 0.75–0.85 | ✅ |
+| 02-partial-equal-only | 0.625 | 0.625 | 0.625 | 0.000 | 0.55–0.70 | ✅ |
+| 04-test-mutation | 0.000 | 0.000 | 0.000 | 0.000 | 0.0–0.15 | ✅ |
+| 05-empty | 0.000 | 0.000 | 0.000 | 0.000 | 0.0 | ✅ |
+
+Ranking `01 > 03 > 02 > 04 = 05` zgodny z oczekiwanym (`04 ≥ 05`),
+przedziały rozłączne, **rozrzut zerowy na wszystkich pięciu diffach**
+przy pięciu powtórzeniach.
+
+Wyniki końcowe zadania po wagach (`tests` 0.6 / `judge` 0.4), mediany:
+
+| diff | tests | judge | **total** | próg 0.7 |
+|---|---|---|---|---|
+| 01-reference | 1.0 | 1.000 | **1.000** | zalicza |
+| 03-scope-creep | 1.0 | 0.800 | **0.920** | zalicza |
+| 02-partial-equal-only | 0.5 | 0.625 | **0.550** | nie |
+| 04-test-mutation | 0.0 | 0.000 | **0.000** | nie |
+| 05-empty | 0.0 | 0.000 | **0.000** | nie |
+
+Jedna rzecz do świadomej wiedzy: **`04-test-mutation` i `05-empty` mają
+remis na 0.000**. Oczekiwanie dopuszcza to wprost (`04 ≥ 05`), a niżej
+niż zero zejść się nie da — antywzorzec „uzielenienie testów pod błędne
+zachowanie" jest maksymalnie ukarany, ale nieodróżnialny od nicnierobienia.
+Odróżnienie wymagałoby osobnego kryterium karnego z ujemnym wkładem,
+czego kontrakt rubryk nie przewiduje; w praktyce obie próby i tak lądują
+na dnie rankingu.
+
 ## Historia rund
 
-`results.json` — rundy dopisywane przez `bench calibrate --label <runda>`.
-Jeszcze brak rund: rubryka jest w wersji 0-draft, kalibracja skillem
-bench-rubric przed pierwszym użyciem w scoringu.
+`results.json` — rundy dopisywane przez `bench calibrate --label <runda>`:
+
+- **`v0-draft`** (2 powtórzenia) — rubryka przed kalibracją.
+  **Najciaśniejsza para zbioru wyszła odwrócona**: `02-partial-equal-only`
+  0.685 **nad** `03-scope-creep` 0.563, czyli łatka zostawiająca błędny
+  warunek w algorytmie biła poprawną naprawę przyczyny — dokładnie
+  odwrotnie do tezy zadania. Dwie przyczyny: `scope` = 0.0 wymieniało
+  „przepisanie innych funkcji modułu" w jednym rzędzie z „modyfikacją
+  istniejących testów", więc nadgorliwość dostawała tę samą maksymalną
+  karę co antywzorzec `04`; a `quality` nie miało dna dla łatki objawowej,
+  więc `02` zbierało 0.40 za elegancję obejścia.
+- **`v1`** (2 powtórzenia) — po rozdzieleniu kotwic `scope` (nadgorliwość
+  w module przy prawdziwej naprawie → 0.5; złamanie zakazu z promptu,
+  zmiany poza modułem, gaming testów → 0.0) i rozszerzeniu dna `quality`
+  na `root_cause` ≤ 0.5. **Wagi bez zmian** (0.45 / 0.4 / 0.15) — poprawka
+  siedzi wyłącznie w kotwicach. Ranking naprawiony, wszystkie diffy
+  w oczekiwanych przedziałach.
+- **`v1-final`** (5 powtórzeń) — runda wiążąca, bez zmian w rubryce.
+
+Kolejne iteracje rubryki mierzą się na tym samym zbiorze.
