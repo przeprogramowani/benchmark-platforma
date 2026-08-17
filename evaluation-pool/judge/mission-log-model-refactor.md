@@ -1,17 +1,36 @@
 ---
-version: "0-draft"
+version: "1"
 weights:
   completeness: 0.4
   scope: 0.35
   boundary: 0.25
 ---
 
-# Rubryka: mission-log-model-refactor (v0-draft)
+# Rubryka: mission-log-model-refactor (v1)
 
-**Szkic — niekalibrowany.** Wagi i kotwice pochodzą z projektowania
-zadania, nie z pomiaru. Kalibracja skillem `bench-rubric` na zbiorze
-`evaluation-pool/judge/mission-log-model-refactor-calibration` (5 diffów
-o znanej jakości) należy się PRZED pierwszym policzonym runem.
+Skalibrowana na zbiorze
+`evaluation-pool/judge/mission-log-model-refactor-calibration`
+(5 diffów o znanej jakości).
+
+Co zmienił pomiar wobec szkicu v0:
+
+- **Zmiana kształtu API zeruje `completeness`, nie tylko `scope`.**
+  W v0 sędzia dawał wariantowi `04-api-drift` completeness 1.00
+  („wszystkie trzy fazy wykonane"), więc kompletny refaktor z po cichu
+  przemianowanymi kodami błędów wychodził 0.650 — **remis** z uczciwym
+  scope creepem (`03`). Wykonanie innego planu niż zlecony nie jest
+  wykonaniem planu.
+- **`completeness` ma kotwicę dla pracy ledwo rozpoczętej.** Kotwica 0.5
+  („jedna faza pominięta") była nadużywana przy pominięciu dwóch faz:
+  `02-phase1-only` dostawał 0.50 za jedną trzecią roboty.
+- **`scope` nie daje pełnych punktów pracy częściowej.** W v0
+  `02-phase1-only` zbierał scope 1.00 i boundary 1.00 — 0.60 punktów za
+  to, że nie wyszedł poza zakres, którego ledwo dotknął. Łączny wynik
+  0.800 stawiał jedną trzecią roboty **nad** kompletnym refaktorem.
+- **Klauzule degeneracyjne wiążą się z brakiem materiału, nie z liczbą.**
+  W v0 były zaczepione o `completeness` = 0.0; po dodaniu zerowania za
+  zmianę API zrównałyby `04` z pustym diffem. Teraz mówią wprost
+  „brak kontraktu / brak zmian do oceny".
 
 Zadanie daje agentowi **gotowy plan implementacyjny** — nazwy plików,
 listy eksportów, unię kodów verbatim, jawną listę rzeczy poza zakresem.
@@ -39,12 +58,25 @@ w katalogu, wymianę axios na fetch.
    komponenty Svelte importują z kontraktu, if-chain zastąpiony lookupem
    przy zachowaniu rozgałęzień specjalnych (`avatar_missing` otwiera
    modal, `quota_exhausted` patchuje lekcję, fallback po statusie).
+   **Sufit nadrzędny:** jeśli diff zmienia kształt API (przemianowane
+   kody błędów, inne statusy, inne pola odpowiedzi), `completeness`
+   wynosi **0.0 niezależnie od liczby domkniętych faz** — plan stawia
+   „to refaktor, nie zmiana protokołu" jako warunek centralny, więc
+   wykonano inny plan niż zlecony. Dotyczy to także sytuacji, w której
+   asercje `generate.test.ts` / `participation-badge.test.ts` /
+   `auth.test.ts` zostały dociągnięte do nowej implementacji, żeby suita
+   repo świeciła na zielono — to zaciera dowód zmiany, nie cofa jej.
    Kotwice:
    - 1.0 — wszystkie trzy fazy domknięte, łącznie z testem kontraktu
-     i zachowanymi rozgałęzieniami specjalnymi klienta,
-   - 0.5 — jedna faza pominięta lub domknięta częściowo (np. kontrakt
-     powstał, ale klient/serwer go nie używa; albo brak testu kontraktu),
-   - 0.0 — wykonano najwyżej fragment jednej fazy albo brak zmian.
+     i zachowanymi rozgałęzieniami specjalnymi klienta, przy nietkniętym
+     protokole HTTP,
+   - 0.5 — jedna faza pominięta lub domknięta częściowo (np. serwer
+     przepięty, klient nie; albo brak testu kontraktu),
+   - 0.25 — wykonana najwyżej jedna faza z trzech: typowo kontrakt
+     powstał, ale ani serwer, ani klient z niego nie korzystają, więc
+     duplikacje, które miał usunąć, nadal żyją obok niego,
+   - 0.0 — wykonano najwyżej fragment jednej fazy, brak zmian, **albo**
+     zadziałał sufit nadrzędny (zmieniony kształt API).
 2. **scope** (waga 0.35) — czy diff trzyma się zakresu z planu? Kotwice
    ważą **ryzyko**, nie liczbę linii:
    - 1.0 — zmienione wyłącznie pliki wymienione w planie, bez zmian
@@ -57,9 +89,16 @@ w katalogu, wymianę axios na fetch.
      kształt API (przemianowane kody błędów, inne statusy) — w tym przez
      dociągnięcie do siebie asercji w `generate.test.ts` /
      `participation-badge.test.ts` / `auth.test.ts`, które plan uznaje
-     za nietykalne; **albo brak zmian do oceny** (przy
-     `completeness` = 0.0 `scope` wynosi 0.0 — pusty diff nie dostaje
-     punktów za to, że niczego nie zepsuł).
+     za nietykalne; **albo brak zmian do oceny** — gdy diff nie wnosi
+     żadnej pracy (pusty diff lub sam szum), `scope` wynosi 0.0:
+     niczego-nie-zepsucie nie jest zasługą.
+
+   **Proporcjonalność:** przy `completeness` = 0.25 (praca ledwo
+   rozpoczęta, patrz kotwice wyżej) `scope` wynosi najwyżej **0.5** —
+   nie ma jeszcze zakresu, którego dyscyplinę dałoby się nagrodzić pełną
+   notą. Ograniczenie NIE dotyczy `completeness` = 0.0 z sufitu za
+   zmianę API: tam pracy jest dużo, a `scope` i tak wpada w kotwicę 0.0
+   z tytułu samej zmiany protokołu.
 3. **boundary** (waga 0.25) — czy zachowano granicę server/client?
    `contract.ts` leży w `src/models/` i może importować `lessonCatalog`
    oraz **type-only** z `src/server/**`; nie wolno mu wciągać z `src/server/**`
@@ -68,13 +107,15 @@ w katalogu, wymianę axios na fetch.
    Kotwice:
    - 1.0 — kontrakt wolny od runtime'owych importów serwerowych
      (re-eksport typu przez `export type`), helpery `Response` poza
-     modelem, klient importuje wyłącznie z kontraktu,
-   - 0.5 — granica formalnie zachowana, ale rozmyta: helpery `Response`
-     w `src/models/`, klient nadal importuje typy z `src/server/**`
-     zamiast z kontraktu,
+     modelem, **oraz** klient faktycznie przepięty na kontrakt,
+   - 0.5 — granica formalnie zachowana, ale rozmyta albo niedomknięta:
+     helpery `Response` w `src/models/`, **albo** klient nadal importuje
+     typy z `src/server/**` zamiast z kontraktu — w tym przypadek, gdy
+     klienta w ogóle nie tknięto (sam czysty kontrakt to jeszcze nie
+     przepięta granica),
    - 0.0 — kontrakt importuje wartość runtime z `src/server/**`
      (kod serwerowy w bundlu klienta) **albo brak kontraktu do oceny**
-     (przy `completeness` = 0.0 `boundary` wynosi 0.0).
+     (diff nie tworzy modułu kontraktu).
 
 ## Format odpowiedzi sędziego (wymagany JSON)
 
