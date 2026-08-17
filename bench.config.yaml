@@ -40,4 +40,10 @@ defaults:
   # Budżet kosztu prób jednego runu (USD) — `bench run` przerywa po jego
   # przekroczeniu. Zgoda człowieka jest potrzebna przy podnoszeniu budżetu,
   # nie przy każdym uruchomieniu; koszt faktyczny jest w report.json.
-  max_cost_usd: 10
+  #
+  # $10 wystarczało na smoke'i pojedynczych zadań. Pierwszy pełny run to
+  # 3 modele × 3 zadania × 3 próby = 27 prób; szacunek ~$13 na zmierzonych
+  # danych (próba Sonneta na mission-log: $1.35 / 539 s). Limit to sufit
+  # przerwania, nie plan wydatku — wyższy nie znaczy droższy, znaczy brak
+  # fałszywego przerwania w połowie macierzy.
+  max_cost_usd: 25
