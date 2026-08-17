@@ -1,0 +1,462 @@
+{
+  "judge_model": "openrouter/anthropic/claude-opus-5",
+  "rounds": {
+    "v0-draft": [
+      {
+        "diff": "01-reference",
+        "rep": 1,
+        "score": 1,
+        "criteria": {
+          "root_cause": 1,
+          "scope": 1,
+          "quality": 1
+        }
+      },
+      {
+        "diff": "01-reference",
+        "rep": 2,
+        "score": 1,
+        "criteria": {
+          "root_cause": 1,
+          "scope": 1,
+          "quality": 1
+        }
+      },
+      {
+        "diff": "02-partial-equal-only",
+        "rep": 1,
+        "score": 0.67,
+        "criteria": {
+          "root_cause": 0.5,
+          "scope": 1,
+          "quality": 0.3
+        }
+      },
+      {
+        "diff": "02-partial-equal-only",
+        "rep": 2,
+        "score": 0.7,
+        "criteria": {
+          "root_cause": 0.5,
+          "scope": 1,
+          "quality": 0.5
+        }
+      },
+      {
+        "diff": "03-scope-creep",
+        "rep": 1,
+        "score": 0.6,
+        "criteria": {
+          "root_cause": 1,
+          "scope": 0,
+          "quality": 1
+        }
+      },
+      {
+        "diff": "03-scope-creep",
+        "rep": 2,
+        "score": 0.525,
+        "criteria": {
+          "root_cause": 1,
+          "scope": 0,
+          "quality": 0.5
+        }
+      },
+      {
+        "diff": "04-test-mutation",
+        "rep": 1,
+        "score": 0,
+        "criteria": {
+          "root_cause": 0,
+          "scope": 0,
+          "quality": 0
+        }
+      },
+      {
+        "diff": "04-test-mutation",
+        "rep": 2,
+        "score": 0,
+        "criteria": {
+          "root_cause": 0,
+          "scope": 0,
+          "quality": 0
+        }
+      },
+      {
+        "diff": "05-empty",
+        "rep": 1,
+        "score": 0,
+        "criteria": {
+          "root_cause": 0,
+          "scope": 0,
+          "quality": 0
+        }
+      },
+      {
+        "diff": "05-empty",
+        "rep": 2,
+        "score": 0,
+        "criteria": {
+          "root_cause": 0,
+          "scope": 0,
+          "quality": 0
+        }
+      }
+    ],
+    "v1": [
+      {
+        "diff": "01-reference",
+        "rep": 1,
+        "score": 1,
+        "criteria": {
+          "root_cause": 1,
+          "scope": 1,
+          "quality": 1
+        }
+      },
+      {
+        "diff": "01-reference",
+        "rep": 2,
+        "score": 1,
+        "criteria": {
+          "root_cause": 1,
+          "scope": 1,
+          "quality": 1
+        }
+      },
+      {
+        "diff": "02-partial-equal-only",
+        "rep": 1,
+        "score": 0.625,
+        "criteria": {
+          "root_cause": 0.5,
+          "scope": 1,
+          "quality": 0
+        }
+      },
+      {
+        "diff": "02-partial-equal-only",
+        "rep": 2,
+        "score": 0.625,
+        "criteria": {
+          "root_cause": 0.5,
+          "scope": 1,
+          "quality": 0
+        }
+      },
+      {
+        "diff": "03-scope-creep",
+        "rep": 1,
+        "score": 0.8,
+        "criteria": {
+          "root_cause": 1,
+          "scope": 0.5,
+          "quality": 1
+        }
+      },
+      {
+        "diff": "03-scope-creep",
+        "rep": 2,
+        "score": 0.8,
+        "criteria": {
+          "root_cause": 1,
+          "scope": 0.5,
+          "quality": 1
+        }
+      },
+      {
+        "diff": "04-test-mutation",
+        "rep": 1,
+        "score": 0,
+        "criteria": {
+          "root_cause": 0,
+          "scope": 0,
+          "quality": 0
+        }
+      },
+      {
+        "diff": "04-test-mutation",
+        "rep": 2,
+        "score": 0,
+        "criteria": {
+          "root_cause": 0,
+          "scope": 0,
+          "quality": 0
+        }
+      },
+      {
+        "diff": "05-empty",
+        "rep": 1,
+        "score": 0,
+        "criteria": {
+          "root_cause": 0,
+          "scope": 0,
+          "quality": 0
+        }
+      },
+      {
+        "diff": "05-empty",
+        "rep": 2,
+        "score": 0,
+        "criteria": {
+          "root_cause": 0,
+          "scope": 0,
+          "quality": 0
+        }
+      }
+    ],
+    "v1-final": [
+      {
+        "diff": "01-reference",
+        "rep": 1,
+        "score": 1,
+        "criteria": {
+          "root_cause": 1,
+          "scope": 1,
+          "quality": 1
+        }
+      },
+      {
+        "diff": "01-reference",
+        "rep": 2,
+        "score": 1,
+        "criteria": {
+          "root_cause": 1,
+          "scope": 1,
+          "quality": 1
+        }
+      },
+      {
+        "diff": "01-reference",
+        "rep": 3,
+        "score": 1,
+        "criteria": {
+          "root_cause": 1,
+          "scope": 1,
+          "quality": 1
+        }
+      },
+      {
+        "diff": "01-reference",
+        "rep": 4,
+        "score": 1,
+        "criteria": {
+          "root_cause": 1,
+          "scope": 1,
+          "quality": 1
+        }
+      },
+      {
+        "diff": "01-reference",
+        "rep": 5,
+        "score": 1,
+        "criteria": {
+          "root_cause": 1,
+          "scope": 1,
+          "quality": 1
+        }
+      },
+      {
+        "diff": "02-partial-equal-only",
+        "rep": 1,
+        "score": 0.625,
+        "criteria": {
+          "root_cause": 0.5,
+          "scope": 1,
+          "quality": 0
+        }
+      },
+      {
+        "diff": "02-partial-equal-only",
+        "rep": 2,
+        "score": 0.625,
+        "criteria": {
+          "root_cause": 0.5,
+          "scope": 1,
+          "quality": 0
+        }
+      },
+      {
+        "diff": "02-partial-equal-only",
+        "rep": 3,
+        "score": 0.625,
+        "criteria": {
+          "root_cause": 0.5,
+          "scope": 1,
+          "quality": 0
+        }
+      },
+      {
+        "diff": "02-partial-equal-only",
+        "rep": 4,
+        "score": 0.625,
+        "criteria": {
+          "root_cause": 0.5,
+          "scope": 1,
+          "quality": 0
+        }
+      },
+      {
+        "diff": "02-partial-equal-only",
+        "rep": 5,
+        "score": 0.625,
+        "criteria": {
+          "root_cause": 0.5,
+          "scope": 1,
+          "quality": 0
+        }
+      },
+      {
+        "diff": "03-scope-creep",
+        "rep": 1,
+        "score": 0.8,
+        "criteria": {
+          "root_cause": 1,
+          "scope": 0.5,
+          "quality": 1
+        }
+      },
+      {
+        "diff": "03-scope-creep",
+        "rep": 2,
+        "score": 0.8,
+        "criteria": {
+          "root_cause": 1,
+          "scope": 0.5,
+          "quality": 1
+        }
+      },
+      {
+        "diff": "03-scope-creep",
+        "rep": 3,
+        "score": 0.8,
+        "criteria": {
+          "root_cause": 1,
+          "scope": 0.5,
+          "quality": 1
+        }
+      },
+      {
+        "diff": "03-scope-creep",
+        "rep": 4,
+        "score": 0.8,
+        "criteria": {
+          "root_cause": 1,
+          "scope": 0.5,
+          "quality": 1
+        }
+      },
+      {
+        "diff": "03-scope-creep",
+        "rep": 5,
+        "score": 0.8,
+        "criteria": {
+          "root_cause": 1,
+          "scope": 0.5,
+          "quality": 1
+        }
+      },
+      {
+        "diff": "04-test-mutation",
+        "rep": 1,
+        "score": 0,
+        "criteria": {
+          "root_cause": 0,
+          "scope": 0,
+          "quality": 0
+        }
+      },
+      {
+        "diff": "04-test-mutation",
+        "rep": 2,
+        "score": 0,
+        "criteria": {
+          "root_cause": 0,
+          "scope": 0,
+          "quality": 0
+        }
+      },
+      {
+        "diff": "04-test-mutation",
+        "rep": 3,
+        "score": 0,
+        "criteria": {
+          "root_cause": 0,
+          "scope": 0,
+          "quality": 0
+        }
+      },
+      {
+        "diff": "04-test-mutation",
+        "rep": 4,
+        "score": 0,
+        "criteria": {
+          "root_cause": 0,
+          "scope": 0,
+          "quality": 0
+        }
+      },
+      {
+        "diff": "04-test-mutation",
+        "rep": 5,
+        "score": 0,
+        "criteria": {
+          "root_cause": 0,
+          "scope": 0,
+          "quality": 0
+        }
+      },
+      {
+        "diff": "05-empty",
+        "rep": 1,
+        "score": 0,
+        "criteria": {
+          "root_cause": 0,
+          "scope": 0,
+          "quality": 0
+        }
+      },
+      {
+        "diff": "05-empty",
+        "rep": 2,
+        "score": 0,
+        "criteria": {
+          "root_cause": 0,
+          "scope": 0,
+          "quality": 0
+        }
+      },
+      {
+        "diff": "05-empty",
+        "rep": 3,
+        "score": 0,
+        "criteria": {
+          "root_cause": 0,
+          "scope": 0,
+          "quality": 0
+        }
+      },
+      {
+        "diff": "05-empty",
+        "rep": 4,
+        "score": 0,
+        "criteria": {
+          "root_cause": 0,
+          "scope": 0,
+          "quality": 0
+        }
+      },
+      {
+        "diff": "05-empty",
+        "rep": 5,
+        "score": 0,
+        "criteria": {
+          "root_cause": 0,
+          "scope": 0,
+          "quality": 0
+        }
+      }
+    ]
+  },
+  "date": "2026-08-17"
+}
