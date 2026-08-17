@@ -1,0 +1,22 @@
+# Asercja tests/footer-current-year — zadanie fix-footer-hardcoded-year.
+# Schemat: .bench-kit/runner/src/schemas/check.ts
+#
+# Dwa checki zamiast jednego celowo: przy `score: fraction` dają skalę
+# 0 / 0.5 / 1, która odróżnia trzy jakości wykonania (patrz komentarz
+# w footer-current-year.test.ts). Jeden check dałby binarne 0/1 i zlał
+# naprawę objawu z naprawą przyczyny.
+#
+# Render komponentu Astro wymaga zainstalowanych zależności repo — tego
+# nie da się obejść wzorcem "zero zależności" z evaluation-pool/tests.
+# Instalacja jest w setup.sh, wspólnym dla obu checków (drugi trafia już
+# na gotowe node_modules).
+score: fraction
+checks:
+  - name: footer-shows-current-year
+    run: |
+      . "$ASSERTION_DIR"/setup.sh
+      pnpm exec vitest run --config .bench-vitest.config.ts -t 'stopka pokazuje bieżący rok'
+  - name: footer-year-is-future-proof
+    run: |
+      . "$ASSERTION_DIR"/setup.sh
+      pnpm exec vitest run --config .bench-vitest.config.ts -t 'rok w stopce nadąża za upływem czasu'

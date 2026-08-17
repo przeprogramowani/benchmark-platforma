@@ -1,0 +1,78 @@
+diff --git a/apps/edu-platform/src/components/Footer.astro b/apps/edu-platform/src/components/Footer.astro
+index 3419360f..2d476bb9 100644
+--- a/apps/edu-platform/src/components/Footer.astro
++++ b/apps/edu-platform/src/components/Footer.astro
+@@ -1,48 +1,40 @@
+ ---
+ import logo from '@/images/generic/logo-white.png';
++
++const currentYear = new Date().getFullYear();
++const links = [
++  { href: 'https://przeprogramowani.pl', label: 'Przeprogramowani.pl', external: false },
++  { href: 'https://opanuj.ai', label: 'Szkolenia AI', external: false },
++  { href: 'https://przeprogramowani.pl/newsletter', label: 'Newsletter', external: true },
++  { href: 'https://www.youtube.com/c/przeprogramowani', label: 'YouTube', external: true },
++  { href: 'https://przeprogramowani.pl/kontakt', label: 'Kontakt', external: true },
++];
++const linkClass = 'text-sm leading-6 text-gray-400 hover:text-white transition-colors font-semibold hover:text-primary';
+ ---
+ 
+ <footer class='border-t border-gray-800 py-8'>
+   <div class='mx-auto max-w-7xl overflow-hidden px-6 lg:px-8'>
+     <nav class='-mb-6 columns-2 flex flex-col' aria-label='Footer'>
+       <div class='sm:flex sm:justify-center sm:space-x-12 text-center'>
+-        <div class='pb-6'>
+-          <a
+-            href='https://przeprogramowani.pl'
+-            class='text-sm leading-6 text-gray-400 hover:text-white transition-colors font-semibold hover:text-primary'
+-            >Przeprogramowani.pl</a
+-          >
+-        </div>
+-        <div class='pb-6'>
+-          <a
+-            href='https://opanuj.ai'
+-            class='text-sm leading-6 text-gray-400 hover:text-white transition-colors font-semibold hover:text-primary'
+-            >Szkolenia AI</a
+-          >
+-        </div>
+-        <div class='pb-6'>
+-          <a
+-            href='https://przeprogramowani.pl/newsletter'
+-            target='_blank'
+-            rel='noopener noreferrer'
+-            class='text-sm leading-6 text-gray-400 hover:text-white transition-colors font-semibold hover:text-primary'
+-            >Newsletter</a
+-          >
+-        </div>
+-        <div class='pb-6'>
+-          <a
+-            href='https://www.youtube.com/c/przeprogramowani'
+-            target='_blank'
+-            rel='noopener noreferrer'
+-            class='text-sm leading-6 text-gray-400 hover:text-white transition-colors font-semibold hover:text-primary'
+-            >YouTube</a
+-          >
+-        </div>
++        {
++          links.map((link) => (
++            <div class='pb-6'>
++              <a
++                href={link.href}
++                target={link.external ? '_blank' : undefined}
++                rel={link.external ? 'noopener noreferrer' : undefined}
++                class={linkClass}
++              >
++                {link.label}
++              </a>
++            </div>
++          ))
++        }
+       </div>
+       <img src={logo.src} alt='Przeprogramowani.pl' class='mx-auto max-w-sm md:max-w-md w-64 mb-6' loading='lazy' />
+     </nav>
+     <p class='mt-10 text-center text-sm leading-5 text-gray-400 hover:text-whit transition-colorse'>
+-      &copy; 2025 Przeprogramowani
++      &copy; {currentYear} Przeprogramowani. Wszelkie prawa zastrzeżone.
+     </p>
+   </div>
+ </footer>

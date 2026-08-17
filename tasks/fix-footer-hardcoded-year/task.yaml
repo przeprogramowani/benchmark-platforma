@@ -1,0 +1,42 @@
+# Naprawa buga: stopka z zahardkodowanym rokiem (zgłoszenie od PM-a).
+# Schemat: .bench-kit/runner/src/schemas/task.ts
+
+repo: przeprogramowani-edu
+
+# Ostatni commit na origin/master z zielonym CI (Platform CI / Deploy),
+# na którym bug występuje naturalnie — stopka renderuje "© 2025".
+# Overlaya nie ma: bug jest zastanym stanem repo bazowego, nie seedem.
+# (Na commicie o dzień nowszym ktoś podmienił literał na 2026 — czyli
+# zrobił dokładnie tę naprawę objawu, którą to zadanie ma odróżniać.)
+commit: "3f033ad4a3f70a00db8270deceb664c81cc35a21"
+
+# Naprowadzenie produktowe: prompt oddaje samo zgłoszenie, bez ścieżek.
+# Agent musi zlokalizować stopkę w monorepo (pnpm + nx, apps/edu-platform),
+# stąd zapas czasu ponad wykonanie jednolinijkowej zmiany.
+timeout_s: 900
+
+evaluation:
+  - tests/footer-current-year
+  - static/lint
+  - judge/footer-current-year
+
+weights:
+  # Miara pracy: render stopki z podmienionym zegarem. Skala 0/0.5/1
+  # sama odróżnia brak naprawy, naprawę objawu i naprawę przyczyny.
+  tests: 0.6
+  # Jakość zmiany: minimalność diffu, idiomatyczność, brak przebudowy
+  # stopki przy okazji. Sędzia rozstrzyga to, czego test nie widzi.
+  judge: 0.4
+  # Guard, nie różnicowanie: łapie rozwalenie repo, ale jest zielony
+  # niezależnie od jakości poprawki — stąd waga 0.
+  static: 0
+  e2e: 0
+
+# Zachowanie asercji nie-LLM-owych na stanie startowym (pusty diff).
+reference:
+  tests/footer-current-year: fail
+  static/lint: pass
+
+# Rok w teście czyta się z zegara, ale pin się starzeje — repo bazowe
+# już odjechało od tego commita.
+expires: "2027-02-28"
