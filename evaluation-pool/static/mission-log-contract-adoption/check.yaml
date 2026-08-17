@@ -1,0 +1,80 @@
+# Asercja static/mission-log-contract-adoption — zadanie mission-log-model-refactor.
+# Schemat: .bench-kit/runner/src/schemas/check.ts
+#
+# `score: binary` jest tu decyzją projektową, nie domyślną: składowa ma
+# odpowiadać na jedno pytanie — "czy refaktor został DOMKNIĘTY bez
+# zmiany protokołu". Częściowa adopcja nie jest częściowo dobra: klient,
+# który importuje kontrakt i obok trzyma stary literał, ma dokładnie tę
+# duplikację, którą zadanie usuwa. Rozdzielczość po fazach dostarcza
+# osobno tests/mission-log-contract (score: fraction).
+#
+# Binary działa w obie strony: pusty diff daje 0 (brak adopcji), a diff
+# poprawny technicznie, lecz ze zmienionym kształtem API — też 0
+# (przypięte testy protokołu są czerwone).
+score: binary
+checks:
+  # Guard typów. Refaktor jest compile-time: kontrakt, który się nie
+  # typuje, nie daje żadnej z obiecywanych gwarancji.
+  # `astro check`, nie `tsc --noEmit` — CLAUDE.md repo bazowego mówi
+  # wprost, że checker Astro łapie błędy, których plain tsc nie widzi.
+  - name: typecheck
+    run: |
+      set -e
+      cd /workspace
+      corepack enable >/dev/null 2>&1 || true
+      pnpm install --frozen-lockfile >/dev/null
+      cd apps/edu-platform
+      pnpm run check
+
+  # Dowód braku zmiany protokołu HTTP. Testy routes i auth wracają do
+  # wersji z pinowanego commita — jeśli implementacja agenta ich nie
+  # przechodzi, zmieniło się API, niezależnie od tego, czy agent
+  # dostosował do siebie kopie w repo.
+  - name: protocol-unchanged
+    run: |
+      set -e
+      cd /workspace
+      corepack enable >/dev/null 2>&1 || true
+      pnpm install --frozen-lockfile >/dev/null
+      cp "$ASSERTION_DIR"/pinned/generate.test.ts apps/edu-platform/src/pages/api/mission-log/generate.test.ts
+      cp "$ASSERTION_DIR"/pinned/participation-badge.test.ts apps/edu-platform/src/pages/api/mission-log/participation-badge.test.ts
+      cp "$ASSERTION_DIR"/pinned/auth.test.ts apps/edu-platform/src/server/missionLog/auth.test.ts
+      cp "$ASSERTION_DIR"/vitest.protocol.config.ts apps/edu-platform/.bench-protocol.config.ts
+      cd apps/edu-platform
+      pnpm exec vitest run --config .bench-protocol.config.ts
+
+  # Klient przestał odtwarzać wiedzę serwera: znikają dwie stałe domenowe
+  # i wszystkie komunikaty PL (te przenoszą się do mapy w kontrakcie).
+  #
+  # Lista jest celowo wąska i literalna. NIE zakazujemy kodów błędów jako
+  # takich: plan zachowuje rozgałęzienia specjalne (`avatar_missing`
+  # otwiera modal, `quota_exhausted` patchuje lekcję) oraz fallback po
+  # samym statusie HTTP, więc kod może legalnie zostać w komponencie —
+  # to komunikat, a nie kod, jest tu duplikacją wiedzy serwera.
+  #
+  # Wzorce trzymamy w pliku i czytamy przez `grep -Ff`: literały zawierają
+  # polskie diakrytyki, przecinki i myślnik — cytowanie ich w YAML-u
+  # i w shellu byłoby źródłem cichych literówek w samej asercji.
+  - name: client-free-of-domain-literals
+    run: |
+      cd /workspace/apps/edu-platform
+      GRID=src/components/missionLog/MissionLogGrid.svelte
+      test -f "$GRID" || { echo "FAIL: brak $GRID"; exit 1; }
+      if grep -nFf "$ASSERTION_DIR"/client-forbidden-literals.txt "$GRID"; then
+        echo "FAIL: klient wciąż trzyma literały domenowe / komunikaty serwera"
+        exit 1
+      fi
+      exit 0
+
+  # Zduplikowany helper odpowiedzi zniknął z obu routes.
+  - name: routes-share-response-helper
+    run: |
+      cd /workspace/apps/edu-platform/src/pages/api/mission-log
+      for f in generate.ts participation-badge.ts; do
+        test -f "$f" || { echo "FAIL: brak $f"; exit 1; }
+      done
+      if grep -nE 'function jsonResponse|const jsonHeaders' generate.ts participation-badge.ts; then
+        echo "FAIL: lokalna kopia helpera odpowiedzi"
+        exit 1
+      fi
+      exit 0

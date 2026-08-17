@@ -1,0 +1,507 @@
+diff --git a/apps/edu-platform/src/components/missionLog/MissionLogGrid.svelte b/apps/edu-platform/src/components/missionLog/MissionLogGrid.svelte
+index 6c71b3f5..a3a8b826 100644
+--- a/apps/edu-platform/src/components/missionLog/MissionLogGrid.svelte
++++ b/apps/edu-platform/src/components/missionLog/MissionLogGrid.svelte
+@@ -3,6 +3,15 @@
+   import AvatarRequiredModal from './AvatarRequiredModal.svelte';
+   import type { MissionLogState, MissionLogLessonState } from '@/server/missionLog/buildState';
+   import type { MissionLogModuleId } from '@/models/missionLog/lessonCatalog';
++  import {
++    MAX_GENERATIONS_PER_LESSON,
++    MISSION_LOG_ERROR_MESSAGES,
++    MISSION_LOG_GENERIC_ERROR_MESSAGE,
++    MISSION_LOG_MODULE_LABELS,
++    TOTAL_MISSION_LOG_BADGES,
++    type GenerateBadgeSuccessResponse,
++    type MissionLogApiErrorCode,
++  } from '@/models/missionLog/contract';
+ 
+   interface Props {
+     initialState: MissionLogState;
+@@ -25,22 +34,15 @@
+   let showAvatarModal = $state(false);
+   let devUnlockAll = $state(false);
+ 
+-  const TOTAL_BADGES = 25;
+   const earnedCount = $derived(lessons.filter((l) => l.count > 0).length);
+-  const progressPercent = $derived(Math.round((earnedCount / TOTAL_BADGES) * 100));
+-
+-  const MODULE_LABELS: Record<MissionLogModuleId, string> = {
+-    m1: 'Moduł 1',
+-    m2: 'Moduł 2',
+-    m3: 'Moduł 3',
+-    m4: 'Moduł 4',
+-    m5: 'Moduł 5',
+-  };
++  const progressPercent = $derived(
++    Math.round((earnedCount / TOTAL_MISSION_LOG_BADGES) * 100),
++  );
+ 
+   const moduleRows = $derived(
+     modules.map((m) => ({
+       id: m.id as MissionLogModuleId,
+-      label: MODULE_LABELS[m.id as MissionLogModuleId] ?? m.id,
++      label: MISSION_LOG_MODULE_LABELS[m.id as MissionLogModuleId] ?? m.id,
+       unlocksAt: m.unlocksAt,
+       unlocked: m.unlocked || devUnlockAll,
+       lessons: lessons
+@@ -85,7 +87,7 @@
+ 
+     busyLessonId = lessonId;
+     try {
+-      const { data } = await axios.post('/api/mission-log/generate', {
++      const { data } = await axios.post<GenerateBadgeSuccessResponse>('/api/mission-log/generate', {
+         lessonId,
+         ...(devMode && devUnlockAll ? { devBypassGating: true } : {}),
+       });
+@@ -97,22 +99,37 @@
+     } catch (err) {
+       if (axios.isAxiosError(err)) {
+         const status = err.response?.status;
+-        const code = err.response?.data?.error;
++        const code: MissionLogApiErrorCode | undefined = err.response?.data?.error;
++
++        // avatar_missing nie jest komunikatem — otwiera modal.
+         if (status === 409 && code === 'avatar_missing') {
+           showAvatarModal = true;
+-        } else if (status === 429 || code === 'quota_exhausted') {
+-          patchLesson(lessonId, { count: 2, remaining: 0 });
+-          setErrorFor(lessonId, 'Limit wykorzystany.');
+-        } else if (status === 403 && code === 'module_locked') {
+-          setErrorFor(lessonId, 'Moduł jest jeszcze zablokowany.');
+-        } else if (status === 503 || code === 'upstream_busy') {
+-          setErrorFor(lessonId, 'Spróbuj za chwilę — generator jest chwilowo zajęty.');
+-        } else if (status === 401) {
+-          setErrorFor(lessonId, 'Sesja wygasła. Zaloguj się ponownie.');
+-        } else if (status === 403) {
+-          setErrorFor(lessonId, 'Brak dostępu do 10xDevs 3.0.');
+         } else {
+-          setErrorFor(lessonId, 'Nie udało się wygenerować odznaki. Spróbuj ponownie.');
++          if (status === 429 || code === 'quota_exhausted') {
++            patchLesson(lessonId, {
++              count: MAX_GENERATIONS_PER_LESSON,
++              remaining: 0,
++            });
++          }
++
++          // Kod z serwera rozstrzyga; status jest fallbackiem, gdy go brak.
++          const resolved: MissionLogApiErrorCode | undefined =
++            code ??
++            (status === 429
++              ? 'quota_exhausted'
++              : status === 503
++                ? 'upstream_busy'
++                : status === 401
++                  ? 'Unauthorized'
++                  : status === 403
++                    ? 'Forbidden'
++                    : undefined);
++
++          setErrorFor(
++            lessonId,
++            (resolved && MISSION_LOG_ERROR_MESSAGES[resolved]) ??
++              MISSION_LOG_GENERIC_ERROR_MESSAGE,
++          );
+         }
+       } else {
+         setErrorFor(lessonId, 'Wystąpił nieoczekiwany błąd.');
+@@ -135,7 +152,7 @@
+       <h2 class="text-sm font-semibold text-white">✨ Postęp Misji</h2>
+       <span class="text-xs text-gray-400">
+         <span class="text-white font-medium">{earnedCount}</span>
+-        / {TOTAL_BADGES} odznak
++        / {TOTAL_MISSION_LOG_BADGES} odznak
+       </span>
+     </div>
+     <div
+@@ -143,7 +160,7 @@
+       role="progressbar"
+       aria-valuenow={earnedCount}
+       aria-valuemin="0"
+-      aria-valuemax={TOTAL_BADGES}>
++      aria-valuemax={TOTAL_MISSION_LOG_BADGES}>
+       <div
+         class="h-full rounded-full bg-gradient-to-r from-purple-500 to-cyan-400 transition-[width] duration-500 ease-out"
+         style:width="{progressPercent}%">
+diff --git a/apps/edu-platform/src/components/missionLog/ParticipationBadge.svelte b/apps/edu-platform/src/components/missionLog/ParticipationBadge.svelte
+index 2b4be41b..cd278e04 100644
+--- a/apps/edu-platform/src/components/missionLog/ParticipationBadge.svelte
++++ b/apps/edu-platform/src/components/missionLog/ParticipationBadge.svelte
+@@ -1,7 +1,9 @@
+ <script lang="ts">
+-  import axios from 'axios';
+   import { onMount } from 'svelte';
+-  import type { ParticipationBadgeResponse } from '@/server/badges/badgesApiClient';
++  import type {
++    ParticipationBadgeResponse,
++    ParticipationBadgeSuccessResponse,
++  } from '@/models/missionLog/contract';
+ 
+   let badge = $state<ParticipationBadgeResponse | null>(null);
+   let loading = $state(true);
+@@ -9,9 +11,8 @@
+ 
+   onMount(async () => {
+     try {
+-      const { data } = await axios.get<{ badge: ParticipationBadgeResponse | null }>(
+-        '/api/mission-log/participation-badge',
+-      );
++      const res = await fetch('/api/mission-log/participation-badge');
++      const data = (await res.json()) as ParticipationBadgeSuccessResponse;
+       badge = data.badge;
+     } catch (err) {
+       console.error('[ParticipationBadge] failed to load', err);
+diff --git a/apps/edu-platform/src/models/missionLog/contract.test.ts b/apps/edu-platform/src/models/missionLog/contract.test.ts
+new file mode 100644
+index 00000000..0c427b03
+--- /dev/null
++++ b/apps/edu-platform/src/models/missionLog/contract.test.ts
+@@ -0,0 +1,29 @@
++import { describe, expect, it } from 'vitest';
++import { MISSION_LOG_LESSON_CATALOG } from './lessonCatalog';
++import {
++  MAX_GENERATIONS_PER_LESSON,
++  MISSION_LOG_ERROR_MESSAGES,
++  MISSION_LOG_GENERIC_ERROR_MESSAGE,
++  TOTAL_MISSION_LOG_BADGES,
++} from './contract';
++
++describe('mission log contract', () => {
++  it('TOTAL_MISSION_LOG_BADGES follows the lesson catalog', () => {
++    expect(TOTAL_MISSION_LOG_BADGES).toBe(MISSION_LOG_LESSON_CATALOG.length);
++  });
++
++  it('exposes the per-lesson generation limit', () => {
++    expect(MAX_GENERATIONS_PER_LESSON).toBeGreaterThan(0);
++  });
++
++  it('every error code has a non-empty message', () => {
++    for (const [code, message] of Object.entries(MISSION_LOG_ERROR_MESSAGES)) {
++      expect(message, `missing message for ${code}`).toBeTruthy();
++      expect(message.trim().length, `blank message for ${code}`).toBeGreaterThan(0);
++    }
++  });
++
++  it('has a generic fallback message', () => {
++    expect(MISSION_LOG_GENERIC_ERROR_MESSAGE.trim().length).toBeGreaterThan(0);
++  });
++});
+diff --git a/apps/edu-platform/src/models/missionLog/contract.ts b/apps/edu-platform/src/models/missionLog/contract.ts
+new file mode 100644
+index 00000000..27b04023
+--- /dev/null
++++ b/apps/edu-platform/src/models/missionLog/contract.ts
+@@ -0,0 +1,76 @@
++import { MISSION_LOG_LESSON_CATALOG, type MissionLogModuleId } from './lessonCatalog';
++
++export type { ParticipationBadgeResponse } from '@/server/badges/badgesApiClient';
++import type { ParticipationBadgeResponse } from '@/server/badges/badgesApiClient';
++
++/** Ile razy jedna lekcja może wygenerować odznakę. */
++export const MAX_GENERATIONS_PER_LESSON = 2;
++
++/** Liczba odznak Mission Log — pochodna katalogu lekcji, nigdy literał. */
++export const TOTAL_MISSION_LOG_BADGES = MISSION_LOG_LESSON_CATALOG.length;
++
++/**
++ * Kody błędów emitowane przez Mission Log API — verbatim, dokładnie tak,
++ * jak trafiają na drut. Niekonsekwencje nazewnicze ('Unauthorized' vs
++ * 'quota_exhausted') są celowe: ujednolicenie byłoby zmianą API.
++ */
++export type MissionLogApiErrorCode =
++  | 'Invalid JSON body'
++  | 'Invalid request body'
++  | 'Unauthorized'
++  | 'Forbidden'
++  | 'ACCESS_UNAVAILABLE'
++  | 'lesson_not_found'
++  | 'avatar_missing'
++  | 'module_locked'
++  | 'quota_exhausted'
++  | 'upstream_busy'
++  | 'upstream_origin_forbidden'
++  | 'upstream_error';
++
++/** Komunikat dla odpowiedzi bez rozpoznanego kodu błędu. */
++export const MISSION_LOG_GENERIC_ERROR_MESSAGE =
++  'Nie udało się wygenerować odznaki. Spróbuj ponownie.';
++
++/**
++ * Polskie komunikaty per kod. Record<kod, string> celowo: nowy kod
++ * w unii bez komunikatu = błąd kompilacji.
++ */
++export const MISSION_LOG_ERROR_MESSAGES: Record<MissionLogApiErrorCode, string> = {
++  'Invalid JSON body': MISSION_LOG_GENERIC_ERROR_MESSAGE,
++  'Invalid request body': MISSION_LOG_GENERIC_ERROR_MESSAGE,
++  Unauthorized: 'Sesja wygasła. Zaloguj się ponownie.',
++  Forbidden: 'Brak dostępu do 10xDevs 3.0.',
++  ACCESS_UNAVAILABLE: MISSION_LOG_GENERIC_ERROR_MESSAGE,
++  lesson_not_found: MISSION_LOG_GENERIC_ERROR_MESSAGE,
++  avatar_missing: MISSION_LOG_GENERIC_ERROR_MESSAGE,
++  module_locked: 'Moduł jest jeszcze zablokowany.',
++  quota_exhausted: 'Limit wykorzystany.',
++  upstream_busy: 'Spróbuj za chwilę — generator jest chwilowo zajęty.',
++  upstream_origin_forbidden: MISSION_LOG_GENERIC_ERROR_MESSAGE,
++  upstream_error: MISSION_LOG_GENERIC_ERROR_MESSAGE,
++};
++
++/** Etykiety modułów — przeniesione z komponentu, żeby wszystko było w jednym miejscu. */
++export const MISSION_LOG_MODULE_LABELS: Record<MissionLogModuleId, string> = {
++  m1: 'Moduł 1',
++  m2: 'Moduł 2',
++  m3: 'Moduł 3',
++  m4: 'Moduł 4',
++  m5: 'Moduł 5',
++};
++
++export interface GenerateBadgeSuccessResponse {
++  badgeImageUrl: string;
++  count: number;
++  remaining: number;
++}
++
++export interface MissionLogErrorResponse {
++  error: MissionLogApiErrorCode;
++  unlocksAt?: string | null;
++}
++
++export interface ParticipationBadgeSuccessResponse {
++  badge: ParticipationBadgeResponse | null;
++}
+diff --git a/apps/edu-platform/src/pages/api/mission-log/generate.ts b/apps/edu-platform/src/pages/api/mission-log/generate.ts
+index 7633f338..e63a71cc 100644
+--- a/apps/edu-platform/src/pages/api/mission-log/generate.ts
++++ b/apps/edu-platform/src/pages/api/mission-log/generate.ts
+@@ -14,18 +14,14 @@ import {
+   recordGeneration,
+ } from '@/server/missionLog/quotaService';
+ import { findMissionLogLesson } from '@/models/missionLog/lessonCatalog';
++import type { GenerateBadgeSuccessResponse } from '@/models/missionLog/contract';
++import { jsonError, jsonOk } from '@/server/missionLog/http';
+ import {
+   withApiErrorReporting,
+   type RouteContextWithSentry,
+ } from '@/server/observability/withApiErrorReporting';
+ import { courseAccessUnavailableResponse } from '@/server/courses/access/courseAccessHttp';
+ 
+-const jsonHeaders = { 'Content-Type': 'application/json' };
+-
+-function jsonResponse(body: unknown, status = 200): Response {
+-  return new Response(JSON.stringify(body), { status, headers: jsonHeaders });
+-}
+-
+ function isObject(value: unknown): value is Record<string, unknown> {
+   return typeof value === 'object' && value !== null && !Array.isArray(value);
+ }
+@@ -35,11 +31,11 @@ async function handler(context: RouteContextWithSentry): Promise<Response> {
+   try {
+     body = await context.request.json();
+   } catch {
+-    return jsonResponse({ error: 'Invalid JSON body' }, 400);
++    return jsonError('Invalid JSON body', 400);
+   }
+ 
+   if (!isObject(body) || typeof body.lessonId !== 'string') {
+-    return jsonResponse({ error: 'Invalid request body' }, 400);
++    return jsonError('Invalid request body', 400);
+   }
+ 
+   const lessonId = body.lessonId;
+@@ -53,14 +49,14 @@ async function handler(context: RouteContextWithSentry): Promise<Response> {
+   const auth = await resolveMissionLogUser(context);
+   if (!auth.ok) {
+     if (auth.status === 503) return courseAccessUnavailableResponse('json', 'pl');
+-    return jsonResponse({ error: auth.error }, auth.status);
++    return jsonError(auth.error, auth.status);
+   }
+ 
+   context.sentry.setUser({ id: auth.user.userId });
+ 
+   const lesson = findMissionLogLesson(lessonId);
+   if (!lesson) {
+-    return jsonResponse({ error: 'lesson_not_found' }, 404);
++    return jsonError('lesson_not_found', 404);
+   }
+ 
+   context.sentry.setMissionLogContext({
+@@ -71,7 +67,7 @@ async function handler(context: RouteContextWithSentry): Promise<Response> {
+   });
+ 
+   if (!auth.user.avatarUrl) {
+-    return jsonResponse({ error: 'avatar_missing' }, 409);
++    return jsonError('avatar_missing', 409);
+   }
+ 
+   const env = context.locals.env;
+@@ -85,10 +81,9 @@ async function handler(context: RouteContextWithSentry): Promise<Response> {
+ 
+   if (!devBypassActive && !isModuleUnlocked(TEN_X_DEVS_3_GATING, lesson.moduleId)) {
+     const moduleConfig = TEN_X_DEVS_3_GATING.modules.find((m) => m.id === lesson.moduleId);
+-    return jsonResponse(
+-      { error: 'module_locked', unlocksAt: moduleConfig?.unlocksAt ?? null },
+-      403,
+-    );
++    return jsonError('module_locked', 403, {
++      unlocksAt: moduleConfig?.unlocksAt ?? null,
++    });
+   }
+   const supabaseEnv = {
+     SUPABASE_URL: env.SUPABASE_URL,
+@@ -98,7 +93,7 @@ async function handler(context: RouteContextWithSentry): Promise<Response> {
+   const quota = await getQuotaForUser(auth.user.userId, supabaseEnv);
+   const existing = quota.find((q) => q.lessonId === lessonId);
+   if (existing && existing.count >= MAX_GENERATIONS_PER_LESSON) {
+-    return jsonResponse({ error: 'quota_exhausted' }, 429);
++    return jsonError('quota_exhausted', 429);
+   }
+ 
+   const badgesEnv: BadgesApiEnv = {
+@@ -115,23 +110,23 @@ async function handler(context: RouteContextWithSentry): Promise<Response> {
+   } catch (err) {
+     if (err instanceof BadgesApiError) {
+       if (err.code === 'rate_limited') {
+-        return jsonResponse({ error: 'upstream_busy' }, 503);
++        return jsonError('upstream_busy', 503);
+       }
+       if (err.code === 'origin_forbidden') {
+         console.error('[api/mission-log/generate] Badges API origin forbidden — whitelist broken', {
+           siteUrl: env.SITE_URL,
+         });
+-        return jsonResponse({ error: 'upstream_origin_forbidden' }, 502);
++        return jsonError('upstream_origin_forbidden', 502);
+       }
+       console.error('[api/mission-log/generate] Badges API error', {
+         status: err.status,
+         code: err.code,
+         message: err.message,
+       });
+-      return jsonResponse({ error: 'upstream_error' }, 502);
++      return jsonError('upstream_error', 502);
+     }
+     console.error('[api/mission-log/generate] Unexpected upstream error', err);
+-    return jsonResponse({ error: 'upstream_error' }, 502);
++    return jsonError('upstream_error', 502);
+   }
+ 
+   try {
+@@ -144,14 +139,15 @@ async function handler(context: RouteContextWithSentry): Promise<Response> {
+       },
+       supabaseEnv,
+     );
+-    return jsonResponse({
++    const success: GenerateBadgeSuccessResponse = {
+       badgeImageUrl: upstream.imageUrl,
+       count: result.count,
+       remaining: MAX_GENERATIONS_PER_LESSON - result.count,
+-    });
++    };
++    return jsonOk(success);
+   } catch (err) {
+     if (err instanceof QuotaExhaustedError) {
+-      return jsonResponse({ error: 'quota_exhausted' }, 429);
++      return jsonError('quota_exhausted', 429);
+     }
+     throw err;
+   }
+diff --git a/apps/edu-platform/src/pages/api/mission-log/participation-badge.ts b/apps/edu-platform/src/pages/api/mission-log/participation-badge.ts
+index 6b78181c..dfe6deac 100644
+--- a/apps/edu-platform/src/pages/api/mission-log/participation-badge.ts
++++ b/apps/edu-platform/src/pages/api/mission-log/participation-badge.ts
+@@ -10,18 +10,14 @@ import {
+   type RouteContextWithSentry,
+ } from '@/server/observability/withApiErrorReporting';
+ import { courseAccessUnavailableResponse } from '@/server/courses/access/courseAccessHttp';
+-
+-const jsonHeaders = { 'Content-Type': 'application/json' };
+-
+-function jsonResponse(body: unknown, status = 200): Response {
+-  return new Response(JSON.stringify(body), { status, headers: jsonHeaders });
+-}
++import type { ParticipationBadgeSuccessResponse } from '@/models/missionLog/contract';
++import { jsonError, jsonOk } from '@/server/missionLog/http';
+ 
+ async function handler(context: RouteContextWithSentry): Promise<Response> {
+   const auth = await resolveMissionLogUser(context);
+   if (!auth.ok) {
+     if (auth.status === 503) return courseAccessUnavailableResponse('json', 'pl');
+-    return jsonResponse({ error: auth.error }, auth.status);
++    return jsonError(auth.error, auth.status);
+   }
+ 
+   context.sentry.setUser({ id: auth.user.userId });
+@@ -34,7 +30,8 @@ async function handler(context: RouteContextWithSentry): Promise<Response> {
+ 
+   try {
+     const badge = await getParticipationBadge(auth.user.email, badgesEnv);
+-    return jsonResponse({ badge });
++    const success: ParticipationBadgeSuccessResponse = { badge };
++    return jsonOk(success);
+   } catch (err) {
+     if (err instanceof BadgesApiError) {
+       if (err.code === 'origin_forbidden') {
+@@ -42,14 +39,14 @@ async function handler(context: RouteContextWithSentry): Promise<Response> {
+           '[api/mission-log/participation-badge] Badges API origin forbidden — whitelist broken',
+           { siteUrl: env.SITE_URL },
+         );
+-        return jsonResponse({ error: 'upstream_origin_forbidden' }, 502);
++        return jsonError('upstream_origin_forbidden', 502);
+       }
+       console.error('[api/mission-log/participation-badge] Badges API error', {
+         status: err.status,
+         code: err.code,
+         message: err.message,
+       });
+-      return jsonResponse({ error: 'upstream_error' }, 502);
++      return jsonError('upstream_error', 502);
+     }
+     throw err;
+   }
+diff --git a/apps/edu-platform/src/server/missionLog/http.ts b/apps/edu-platform/src/server/missionLog/http.ts
+new file mode 100644
+index 00000000..8895500c
+--- /dev/null
++++ b/apps/edu-platform/src/server/missionLog/http.ts
+@@ -0,0 +1,29 @@
++import type {
++  GenerateBadgeSuccessResponse,
++  MissionLogApiErrorCode,
++  ParticipationBadgeSuccessResponse,
++} from '@/models/missionLog/contract';
++
++const jsonHeaders = { 'Content-Type': 'application/json' };
++
++/**
++ * Odpowiedź błędu Mission Log API. Kod jest typowany kontraktem —
++ * literówka albo kod spoza unii nie skompiluje się.
++ */
++export function jsonError(
++  code: MissionLogApiErrorCode,
++  status: number,
++  extra?: Record<string, unknown>,
++): Response {
++  return new Response(JSON.stringify({ error: code, ...extra }), {
++    status,
++    headers: jsonHeaders,
++  });
++}
++
++/** Odpowiedź sukcesu — kształt pilnowany typami odpowiedzi z kontraktu. */
++export function jsonOk(
++  body: GenerateBadgeSuccessResponse | ParticipationBadgeSuccessResponse,
++): Response {
++  return new Response(JSON.stringify(body), { status: 200, headers: jsonHeaders });
++}
+diff --git a/apps/edu-platform/src/server/missionLog/quotaService.ts b/apps/edu-platform/src/server/missionLog/quotaService.ts
+index dc48d189..81667116 100644
+--- a/apps/edu-platform/src/server/missionLog/quotaService.ts
++++ b/apps/edu-platform/src/server/missionLog/quotaService.ts
+@@ -2,7 +2,8 @@ import { getSupabaseAdmin } from '@/server/supabase/client';
+ 
+ type SupabaseEnv = { SUPABASE_URL: string; SUPABASE_SERVICE_KEY: string };
+ 
+-export const MAX_GENERATIONS_PER_LESSON = 2;
++export { MAX_GENERATIONS_PER_LESSON } from '@/models/missionLog/contract';
++import { MAX_GENERATIONS_PER_LESSON } from '@/models/missionLog/contract';
+ 
+ export interface QuotaEntry {
+   lessonId: string;

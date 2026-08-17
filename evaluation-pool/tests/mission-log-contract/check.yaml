@@ -1,0 +1,37 @@
+# Asercja tests/mission-log-contract — zadanie mission-log-model-refactor.
+# Schemat: .bench-kit/runner/src/schemas/check.ts
+#
+# Miara pracy, nie guard: na stanie startowym WSZYSTKIE trzy checki są
+# czerwone (moduł kontraktu i helpery jeszcze nie istnieją).
+#
+# `score: fraction` i trzy osobne komendy zamiast jednej dają rozdzielczość
+# po fazach planu: Faza 1 (kontrakt) punktuje niezależnie od Fazy 2
+# (helpery serwerowe). Jedna komenda dałaby binarne 0/1 i zlała
+# "zrobił połowę" z "nie ruszył tematu".
+#
+# Testy importują moduły przez alias `@` z własnej konfiguracji vitest —
+# nie z `vitest.config.ts` repo, którego agent mógł dotknąć.
+score: fraction
+checks:
+  # Faza 1: stałe domenowe (liczba odznak jako pochodna katalogu, limit
+  # generowań re-eksportowany przez quotaService zamiast zdublowany).
+  - name: contract-constants
+    run: |
+      . "$ASSERTION_DIR"/setup.sh
+      pnpm exec vitest run --config .bench-vitest.config.ts .bench-mission-log-constants.test.ts
+
+  # Faza 1: unia kodów i komunikaty PL. Ten check jest jednocześnie
+  # dowodem braku zmiany protokołu — "ujednolicenie" nazewnictwa kodów
+  # (np. 'Unauthorized' → 'unauthorized') zapala go na czerwono, nawet
+  # gdy agent dociągnie do zmiany testy repo bazowego.
+  - name: contract-error-codes
+    run: |
+      . "$ASSERTION_DIR"/setup.sh
+      pnpm exec vitest run --config .bench-vitest.config.ts .bench-mission-log-codes.test.ts
+
+  # Faza 2: typowane helpery odpowiedzi, zachowanie identyczne z ręcznym
+  # `jsonResponse`, które zastępują.
+  - name: contract-http-helpers
+    run: |
+      . "$ASSERTION_DIR"/setup.sh
+      pnpm exec vitest run --config .bench-vitest.config.ts .bench-mission-log-http.test.ts

@@ -1,0 +1,68 @@
+# Refaktor: wydzielenie modułu kontraktu front–backend feature'u Mission Log.
+# Schemat: .bench-kit/runner/src/schemas/task.ts
+
+repo: przeprogramowani-edu
+
+# Ostatni commit na origin/master z zielonym Platform CI. Kontrakt jeszcze
+# nie istnieje, a wszystkie duplikacje z planu są na nim obecne dokładnie
+# w opisanych miejscach (MissionLogGrid.svelte:28,104,98-119;
+# quotaService.ts:5) — zadanie ma na tym pinie sens bez overlaya.
+# Overlaya nie ma: to nie jest seed buga, tylko zastany dług feature'u.
+commit: "c4f769abaa595c24119b8dd420dbefcc8c6c6ce0"
+
+# Zależności zapiekane w obraz zadania. Bez tego zlecenie byłoby
+# wewnętrznie sprzeczne: prompt każe agentowi zweryfikować pracę
+# (`pnpm run check`, `pnpm exec vitest run`), a próba biegnie offline.
+# Artefakty prepare są commitowane w obrazie, więc node_modules nie
+# wchodzi do patch.diff agenta.
+#
+# Jedna linia, nie blok `|`: runner wkleja tę wartość wprost w instrukcję
+# `RUN cd /workspace && ( … )` generowanego Dockerfile'a, więc znak nowej
+# linii rozbija komendę w połowie (złapane próbnym runem, nie recenzją).
+prepare: "corepack enable >/dev/null 2>&1 || true; pnpm install --frozen-lockfile"
+
+# astro check chodzi po 765 plikach monorepo; instalacja + typecheck to
+# najcięższa operacja tego stacku. Limit z zapasem, żeby ewentualne
+# przerwanie było winą modelu, a nie sufitu pamięci.
+memory_mb: 6144
+
+# Naprowadzenie: prompt to pełny plan implementacyjny z sesji planowania
+# (nazwy plików, listy eksportów, unia kodów verbatim). Zadanie mierzy
+# WIERNOŚĆ I KOMPLETNOŚĆ WYKONANIA PLANU, nie lokalizację długu ani
+# projekt API modułu — stąd timeout bliżej wykonania niż eksploracji,
+# z zapasem na 2–3 cykle weryfikacji (astro check to ~25 s).
+timeout_s: 1200
+
+evaluation:
+  - tests/mission-log-contract
+  - static/mission-log-contract-adoption
+  - judge/mission-log-model-refactor
+
+weights:
+  # Miara pracy z rozdzielczością po fazach planu: stałe kontraktu /
+  # kody błędów verbatim / helpery HTTP punktują się niezależnie, więc
+  # "zrobił Fazę 1" (0.33–0.67) nie zlewa się z "nie ruszył tematu" (0).
+  tests: 0.4
+  # Domknięcie refaktoru, binarnie: typy + nietknięty protokół HTTP +
+  # klient bez literałów + jeden helper odpowiedzi. Częściowa adopcja
+  # nie jest częściowo dobra — klient importujący kontrakt i trzymający
+  # obok stary literał ma dokładnie tę duplikację, którą zadanie usuwa.
+  static: 0.35
+  # Jedyna składowa odróżniająca poprawny refaktor od poprawnego
+  # refaktoru z rozdmuchanym zakresem (MODULE_LABELS, zod, axios→fetch —
+  # wprost wykluczone w planie) oraz oceniająca granicę server/client
+  # bundle, której testy nie widzą.
+  judge: 0.25
+  e2e: 0
+
+# Zachowanie asercji nie-LLM-owych na stanie startowym (pusty diff).
+# Obie to miary pracy — zadanie nie ma guardów o wadze 0: rolę guarda
+# pełnią checki wewnątrz static (typecheck, przypięte testy protokołu),
+# spięte binarnie z checkami adopcji.
+reference:
+  tests/mission-log-contract: fail
+  static/mission-log-contract-adoption: fail
+
+# Pin siedzi na ruchliwym masterze; plan cytuje konkretne numery linii,
+# więc starzeje się szybciej niż zadanie bez odwołań do lokalizacji.
+expires: "2027-02-28"
