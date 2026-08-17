@@ -1,0 +1,34 @@
+{
+  "generated_at": "2026-08-17T09:12:06.774Z",
+  "run_dir": "/home/runner/work/benchmark-platforma/benchmark-platforma/out/run",
+  "pass_threshold": 0.7,
+  "cost_scope": "trials",
+  "total_cost_usd": 0.0584259,
+  "total_judge_cost_usd": 0.013075,
+  "trials": 1,
+  "eras": [
+    {
+      "stamps": {
+        "template_version": "0.10.1",
+        "scoring_version": "2",
+        "task_hash": "aef9b6958074cd3950c23cc67fe41a92e3c918bf638e549da8afce2566c7aa82",
+        "judge_model": "openrouter/anthropic/claude-opus-5",
+        "rubric_version": "default-rubric@3"
+      },
+      "rows": [
+        {
+          "model": "openrouter/anthropic/claude-sonnet-5",
+          "task": "demo-hello-bench",
+          "trials": 1,
+          "median_total": 1,
+          "median_cost_usd": 0.0584259,
+          "median_judge_cost_usd": 0.013075,
+          "median_duration_s": 15.8,
+          "passed": 1,
+          "pass_at_1": 1,
+          "pass_at_k": 1
+        }
+      ]
+    }
+  ]
+}
