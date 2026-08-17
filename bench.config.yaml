@@ -1,0 +1,43 @@
+# Konfiguracja instancji benchmarku (strefa firmy — nietykalna przy update).
+# Schemat: .bench-kit/runner/src/schemas/config.ts
+
+# Repozytoria bazowe — projekty produktowe, na których agenci wykonują
+# zadania. Benchmark NIGDY ich nie modyfikuje; dostęp read-only.
+# URL zawsze https — dla repo prywatnych sekret BASE_REPO_TOKEN
+# (fine-grained PAT, contents:read) w repo instancji; workflow wpina go
+# w gita sam. Repo publiczne działają bez sekretu.
+base_repos:
+  - name: przeprogramowani-edu
+    url: https://github.com/przeprogramowani/przeprogramowani-edu.git
+
+# LLM-as-judge: stały, mocny model — INNY niż modele oceniane.
+# Zmiana modelu sędziego lub wersji rubryki zamyka erę porównywalności
+# (wersję deklaruje każda rubryka w swoim frontmatterze — `version`;
+# opcjonalne judge.rubric_version to tylko fallback dla rubryk legacy).
+judge:
+  model: openrouter/anthropic/claude-opus-5
+  # Budżet tokenów odpowiedzi sędziego. U modeli z rozumowaniem reasoning
+  # liczy się do tego budżetu — za niski limit ucina JSON werdyktu
+  # i zeruje składową judge z winy narzędzia, nie modelu.
+  #
+  # Uwaga przy diagnozie zerowej składowej judge: ucięcie na limicie NIE
+  # jest jedyną przyczyną niepoprawnego JSON-a. Sędzia potrafi zamknąć
+  # odpowiedź sam (`finish_reason: stop`, ~120 tokenów przy budżecie
+  # 8192) i mimo to zgubić klamrę domykającą. Zanim podniesiesz limit,
+  # sprawdź `finish_reason` i `usage` w judge.json — przy "stop" problem
+  # jest w formacie, nie w budżecie.
+  max_tokens: 8192
+
+# Defaults runu — nadpisywalne parametrami workflow_dispatch.
+defaults:
+  # Liczba prób na (model × zadanie); agregacja liczy medianę i pass@k.
+  trials: 3
+  # Modele oceniane, gdy dispatch nie poda własnej listy.
+  models:
+    - openrouter/anthropic/claude-sonnet-5
+  # Timeout próby (sekundy), gdy task.yaml nie nadpisze.
+  timeout_s: 1800
+  # Budżet kosztu prób jednego runu (USD) — `bench run` przerywa po jego
+  # przekroczeniu. Zgoda człowieka jest potrzebna przy podnoszeniu budżetu,
+  # nie przy każdym uruchomieniu; koszt faktyczny jest w report.json.
+  max_cost_usd: 10
