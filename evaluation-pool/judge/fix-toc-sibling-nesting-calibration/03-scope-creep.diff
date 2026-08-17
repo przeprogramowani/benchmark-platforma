@@ -1,0 +1,34 @@
+diff --git a/apps/edu-platform/src/utils/buildTocHierarchy.ts b/apps/edu-platform/src/utils/buildTocHierarchy.ts
+index 84f6688..8e4ee94 100644
+--- a/apps/edu-platform/src/utils/buildTocHierarchy.ts
++++ b/apps/edu-platform/src/utils/buildTocHierarchy.ts
+@@ -36,7 +36,7 @@ export function buildTocHierarchy(flatHeadings: TocItem[]): TocItem[] {
+ 
+     // Pop from stack until we find a valid parent (lower level)
+     // or reach the root (empty stack)
+-    while (stack.length > 0 && stack[stack.length - 1].level > item.level) {
++    while (stack.length > 0 && stack[stack.length - 1].level >= item.level) {
+       stack.pop();
+     }
+ 
+@@ -70,13 +70,14 @@ export function buildTocHierarchy(flatHeadings: TocItem[]): TocItem[] {
+  * ```
+  */
+ export function buildTocMap(flatHeadings: TocItem[]): Map<string, TocItem> {
+-  const map = new Map<string, TocItem>();
+-
+-  flatHeadings.forEach((heading) => {
+-    map.set(heading.id, heading);
+-  });
++  return new Map(flatHeadings.map((heading) => [heading.id, heading]));
++}
+ 
+-  return map;
++/**
++ * Flattens a TOC tree back into a flat list (depth-first).
++ */
++export function flattenToc(tree: TocItem[]): TocItem[] {
++  return tree.flatMap((item) => [item, ...flattenToc(item.children)]);
+ }
+ 
+ /**

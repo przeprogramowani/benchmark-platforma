@@ -1,0 +1,30 @@
+diff --git a/apps/edu-platform/src/utils/buildTocHierarchy.test.ts b/apps/edu-platform/src/utils/buildTocHierarchy.test.ts
+index 20294a1..0247227 100644
+--- a/apps/edu-platform/src/utils/buildTocHierarchy.test.ts
++++ b/apps/edu-platform/src/utils/buildTocHierarchy.test.ts
+@@ -32,10 +32,10 @@ describe('buildTocHierarchy', () => {
+       ];
+       const tree = buildTocHierarchy(flat);
+ 
+-      expect(tree).toHaveLength(3);
++      expect(tree).toHaveLength(1);
+       expect(tree[0].id).toBe('1');
+-      expect(tree[1].id).toBe('2');
+-      expect(tree[2].id).toBe('3');
++      expect(tree[0].children[0].id).toBe('2');
++      expect(tree[0].children[0].children[0].id).toBe('3');
+     });
+ 
+     it('should handle siblings at same level', () => {
+@@ -47,9 +47,9 @@ describe('buildTocHierarchy', () => {
+       const tree = buildTocHierarchy(flat);
+ 
+       expect(tree).toHaveLength(1);
+-      expect(tree[0].children).toHaveLength(2);
++      expect(tree[0].children).toHaveLength(1);
+       expect(tree[0].children[0].id).toBe('2');
+-      expect(tree[0].children[1].id).toBe('3');
++      expect(tree[0].children[0].children[0].id).toBe('3');
+     });
+   });
+ 

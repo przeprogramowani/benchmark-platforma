@@ -1,0 +1,13 @@
+diff --git a/apps/edu-platform/src/utils/buildTocHierarchy.ts b/apps/edu-platform/src/utils/buildTocHierarchy.ts
+index 84f6688..c58dc38 100644
+--- a/apps/edu-platform/src/utils/buildTocHierarchy.ts
++++ b/apps/edu-platform/src/utils/buildTocHierarchy.ts
+@@ -36,7 +36,7 @@ export function buildTocHierarchy(flatHeadings: TocItem[]): TocItem[] {
+ 
+     // Pop from stack until we find a valid parent (lower level)
+     // or reach the root (empty stack)
+-    while (stack.length > 0 && stack[stack.length - 1].level > item.level) {
++    while (stack.length > 0 && stack[stack.length - 1].level >= item.level) {
+       stack.pop();
+     }
+ 
