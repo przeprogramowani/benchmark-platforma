@@ -1,0 +1,462 @@
+{
+  "judge_model": "openrouter/anthropic/claude-opus-5",
+  "rounds": {
+    "v0-draft": [
+      {
+        "diff": "01-reference",
+        "rep": 1,
+        "score": 1,
+        "criteria": {
+          "completeness": 1,
+          "scope": 1,
+          "boundary": 1
+        }
+      },
+      {
+        "diff": "01-reference",
+        "rep": 2,
+        "score": 1,
+        "criteria": {
+          "completeness": 1,
+          "scope": 1,
+          "boundary": 1
+        }
+      },
+      {
+        "diff": "02-phase1-only",
+        "rep": 1,
+        "score": 0.8,
+        "criteria": {
+          "completeness": 0.5,
+          "scope": 1,
+          "boundary": 1
+        }
+      },
+      {
+        "diff": "02-phase1-only",
+        "rep": 2,
+        "score": 0.8,
+        "criteria": {
+          "completeness": 0.5,
+          "scope": 1,
+          "boundary": 1
+        }
+      },
+      {
+        "diff": "03-scope-creep",
+        "rep": 1,
+        "score": 0.65,
+        "criteria": {
+          "completeness": 1,
+          "scope": 0,
+          "boundary": 1
+        }
+      },
+      {
+        "diff": "03-scope-creep",
+        "rep": 2,
+        "score": 0.65,
+        "criteria": {
+          "completeness": 1,
+          "scope": 0,
+          "boundary": 1
+        }
+      },
+      {
+        "diff": "04-api-drift",
+        "rep": 1,
+        "score": 0.65,
+        "criteria": {
+          "completeness": 1,
+          "scope": 0,
+          "boundary": 1
+        }
+      },
+      {
+        "diff": "04-api-drift",
+        "rep": 2,
+        "score": 0.65,
+        "criteria": {
+          "completeness": 1,
+          "scope": 0,
+          "boundary": 1
+        }
+      },
+      {
+        "diff": "05-empty",
+        "rep": 1,
+        "score": 0,
+        "criteria": {
+          "completeness": 0,
+          "scope": 0,
+          "boundary": 0
+        }
+      },
+      {
+        "diff": "05-empty",
+        "rep": 2,
+        "score": 0,
+        "criteria": {
+          "completeness": 0,
+          "scope": 0,
+          "boundary": 0
+        }
+      }
+    ],
+    "v1": [
+      {
+        "diff": "01-reference",
+        "rep": 1,
+        "score": 1,
+        "criteria": {
+          "completeness": 1,
+          "scope": 1,
+          "boundary": 1
+        }
+      },
+      {
+        "diff": "01-reference",
+        "rep": 2,
+        "score": 1,
+        "criteria": {
+          "completeness": 1,
+          "scope": 1,
+          "boundary": 1
+        }
+      },
+      {
+        "diff": "02-phase1-only",
+        "rep": 1,
+        "score": 0.4,
+        "criteria": {
+          "completeness": 0.25,
+          "scope": 0.5,
+          "boundary": 0.5
+        }
+      },
+      {
+        "diff": "02-phase1-only",
+        "rep": 2,
+        "score": 0.4,
+        "criteria": {
+          "completeness": 0.25,
+          "scope": 0.5,
+          "boundary": 0.5
+        }
+      },
+      {
+        "diff": "03-scope-creep",
+        "rep": 1,
+        "score": 0.65,
+        "criteria": {
+          "completeness": 1,
+          "scope": 0,
+          "boundary": 1
+        }
+      },
+      {
+        "diff": "03-scope-creep",
+        "rep": 2,
+        "score": 0.65,
+        "criteria": {
+          "completeness": 1,
+          "scope": 0,
+          "boundary": 1
+        }
+      },
+      {
+        "diff": "04-api-drift",
+        "rep": 1,
+        "score": 0.25,
+        "criteria": {
+          "completeness": 0,
+          "scope": 0,
+          "boundary": 1
+        }
+      },
+      {
+        "diff": "04-api-drift",
+        "rep": 2,
+        "score": 0.25,
+        "criteria": {
+          "completeness": 0,
+          "scope": 0,
+          "boundary": 1
+        }
+      },
+      {
+        "diff": "05-empty",
+        "rep": 1,
+        "score": 0,
+        "criteria": {
+          "completeness": 0,
+          "scope": 0,
+          "boundary": 0
+        }
+      },
+      {
+        "diff": "05-empty",
+        "rep": 2,
+        "score": 0,
+        "criteria": {
+          "completeness": 0,
+          "scope": 0,
+          "boundary": 0
+        }
+      }
+    ],
+    "v1-final": [
+      {
+        "diff": "01-reference",
+        "rep": 1,
+        "score": 1,
+        "criteria": {
+          "completeness": 1,
+          "scope": 1,
+          "boundary": 1
+        }
+      },
+      {
+        "diff": "01-reference",
+        "rep": 2,
+        "score": 1,
+        "criteria": {
+          "completeness": 1,
+          "scope": 1,
+          "boundary": 1
+        }
+      },
+      {
+        "diff": "01-reference",
+        "rep": 3,
+        "score": 1,
+        "criteria": {
+          "completeness": 1,
+          "scope": 1,
+          "boundary": 1
+        }
+      },
+      {
+        "diff": "01-reference",
+        "rep": 4,
+        "score": 1,
+        "criteria": {
+          "completeness": 1,
+          "scope": 1,
+          "boundary": 1
+        }
+      },
+      {
+        "diff": "01-reference",
+        "rep": 5,
+        "score": 1,
+        "criteria": {
+          "completeness": 1,
+          "scope": 1,
+          "boundary": 1
+        }
+      },
+      {
+        "diff": "02-phase1-only",
+        "rep": 1,
+        "score": 0.4,
+        "criteria": {
+          "completeness": 0.25,
+          "scope": 0.5,
+          "boundary": 0.5
+        }
+      },
+      {
+        "diff": "02-phase1-only",
+        "rep": 2,
+        "score": 0.4,
+        "criteria": {
+          "completeness": 0.25,
+          "scope": 0.5,
+          "boundary": 0.5
+        }
+      },
+      {
+        "diff": "02-phase1-only",
+        "rep": 3,
+        "score": 0.4,
+        "criteria": {
+          "completeness": 0.25,
+          "scope": 0.5,
+          "boundary": 0.5
+        }
+      },
+      {
+        "diff": "02-phase1-only",
+        "rep": 4,
+        "score": 0.4,
+        "criteria": {
+          "completeness": 0.25,
+          "scope": 0.5,
+          "boundary": 0.5
+        }
+      },
+      {
+        "diff": "02-phase1-only",
+        "rep": 5,
+        "score": 0.4,
+        "criteria": {
+          "completeness": 0.25,
+          "scope": 0.5,
+          "boundary": 0.5
+        }
+      },
+      {
+        "diff": "03-scope-creep",
+        "rep": 1,
+        "score": 0.65,
+        "criteria": {
+          "completeness": 1,
+          "scope": 0,
+          "boundary": 1
+        }
+      },
+      {
+        "diff": "03-scope-creep",
+        "rep": 2,
+        "score": 0.65,
+        "criteria": {
+          "completeness": 1,
+          "scope": 0,
+          "boundary": 1
+        }
+      },
+      {
+        "diff": "03-scope-creep",
+        "rep": 3,
+        "score": 0.65,
+        "criteria": {
+          "completeness": 1,
+          "scope": 0,
+          "boundary": 1
+        }
+      },
+      {
+        "diff": "03-scope-creep",
+        "rep": 4,
+        "score": 0.55,
+        "criteria": {
+          "completeness": 0.75,
+          "scope": 0,
+          "boundary": 1
+        }
+      },
+      {
+        "diff": "03-scope-creep",
+        "rep": 5,
+        "score": 0.65,
+        "criteria": {
+          "completeness": 1,
+          "scope": 0,
+          "boundary": 1
+        }
+      },
+      {
+        "diff": "04-api-drift",
+        "rep": 1,
+        "score": 0.25,
+        "criteria": {
+          "completeness": 0,
+          "scope": 0,
+          "boundary": 1
+        }
+      },
+      {
+        "diff": "04-api-drift",
+        "rep": 2,
+        "score": 0.25,
+        "criteria": {
+          "completeness": 0,
+          "scope": 0,
+          "boundary": 1
+        }
+      },
+      {
+        "diff": "04-api-drift",
+        "rep": 3,
+        "score": 0.25,
+        "criteria": {
+          "completeness": 0,
+          "scope": 0,
+          "boundary": 1
+        }
+      },
+      {
+        "diff": "04-api-drift",
+        "rep": 4,
+        "score": 0.125,
+        "criteria": {
+          "completeness": 0,
+          "scope": 0,
+          "boundary": 0.5
+        }
+      },
+      {
+        "diff": "04-api-drift",
+        "rep": 5,
+        "score": 0.25,
+        "criteria": {
+          "completeness": 0,
+          "scope": 0,
+          "boundary": 1
+        }
+      },
+      {
+        "diff": "05-empty",
+        "rep": 1,
+        "score": 0,
+        "criteria": {
+          "completeness": 0,
+          "scope": 0,
+          "boundary": 0
+        }
+      },
+      {
+        "diff": "05-empty",
+        "rep": 2,
+        "score": 0,
+        "criteria": {
+          "completeness": 0,
+          "scope": 0,
+          "boundary": 0
+        }
+      },
+      {
+        "diff": "05-empty",
+        "rep": 3,
+        "score": 0,
+        "criteria": {
+          "completeness": 0,
+          "scope": 0,
+          "boundary": 0
+        }
+      },
+      {
+        "diff": "05-empty",
+        "rep": 4,
+        "score": 0,
+        "criteria": {
+          "completeness": 0,
+          "scope": 0,
+          "boundary": 0
+        }
+      },
+      {
+        "diff": "05-empty",
+        "rep": 5,
+        "score": 0,
+        "criteria": {
+          "completeness": 0,
+          "scope": 0,
+          "boundary": 0
+        }
+      }
+    ]
+  },
+  "date": "2026-08-17"
+}
