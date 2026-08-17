@@ -1,0 +1,83 @@
+{
+  "generated_at": "2026-08-17T20:35:41.341Z",
+  "run_dir": "/home/runner/work/benchmark-platforma/benchmark-platforma/out/run",
+  "pass_threshold": 0.7,
+  "cost_scope": "trials",
+  "total_cost_usd": 6.7009918,
+  "total_judge_cost_usd": 0.68164,
+  "trials": 9,
+  "eras": [
+    {
+      "stamps": {
+        "template_version": "0.13.0",
+        "scoring_version": "2",
+        "task_hash": "a80ddd8c95ecec0c84e015cad85cf1406d99db542ba347343984ef2067bd0a4d",
+        "judge_model": "openrouter/anthropic/claude-opus-5",
+        "rubric_version": "footer-current-year@1",
+        "memory_limit_mb": null
+      },
+      "rows": [
+        {
+          "model": "openrouter/anthropic/claude-sonnet-5",
+          "task": "fix-footer-hardcoded-year",
+          "trials": 3,
+          "median_total": 1,
+          "median_cost_usd": 0.229733,
+          "median_judge_cost_usd": 0.021485,
+          "median_duration_s": 214,
+          "passed": 3,
+          "pass_at_1": 1,
+          "pass_at_k": 1
+        }
+      ]
+    },
+    {
+      "stamps": {
+        "template_version": "0.13.0",
+        "scoring_version": "2",
+        "task_hash": "8d9aa31c147389fd0eb381de928169d0ef67981aea954b946cdf9457ae56e21b",
+        "judge_model": "openrouter/anthropic/claude-opus-5",
+        "rubric_version": "toc-sibling-nesting@1",
+        "memory_limit_mb": null
+      },
+      "rows": [
+        {
+          "model": "openrouter/anthropic/claude-sonnet-5",
+          "task": "fix-toc-sibling-nesting",
+          "trials": 3,
+          "median_total": 1,
+          "median_cost_usd": 0.3801666,
+          "median_judge_cost_usd": 0.0242,
+          "median_duration_s": 175.2,
+          "passed": 3,
+          "pass_at_1": 1,
+          "pass_at_k": 1
+        }
+      ]
+    },
+    {
+      "stamps": {
+        "template_version": "0.13.0",
+        "scoring_version": "2",
+        "task_hash": "0d94e1192dda15ce4f41b380f5264e061ceb8ace3b30b976e545ee24d8270699",
+        "judge_model": "openrouter/anthropic/claude-opus-5",
+        "rubric_version": "mission-log-model-refactor@1",
+        "memory_limit_mb": 6144
+      },
+      "rows": [
+        {
+          "model": "openrouter/anthropic/claude-sonnet-5",
+          "task": "mission-log-model-refactor",
+          "trials": 3,
+          "median_total": 0.94625,
+          "median_cost_usd": 1.7749857,
+          "median_judge_cost_usd": 0.190765,
+          "median_duration_s": 767.9,
+          "passed": 3,
+          "pass_at_1": 1,
+          "pass_at_k": 1
+        }
+      ]
+    }
+  ]
+}
