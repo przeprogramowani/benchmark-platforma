@@ -1,0 +1,266 @@
+diff --git a/apps/edu-platform/astro-env.ts b/apps/edu-platform/astro-env.ts
+index 0b59a85..e4e12fe 100644
+--- a/apps/edu-platform/astro-env.ts
++++ b/apps/edu-platform/astro-env.ts
+@@ -37,6 +37,10 @@ export const ASTRO_ENV_SCHEMA = {
+     context: 'server',
+     access: 'secret',
+   }),
++  OPENROUTER_TOKEN_ENC_KEY: envField.string({
++    context: 'server',
++    access: 'secret',
++  }),
+   GITHUB_CLIENT_ID: envField.string({
+     context: 'server',
+     access: 'secret',
+diff --git a/docs/plans/openrouter-token-storage.md b/docs/plans/openrouter-token-storage.md
+new file mode 100644
+index 0000000..0a7d314
+--- /dev/null
++++ b/docs/plans/openrouter-token-storage.md
+@@ -0,0 +1,245 @@
++# Plan: bezpieczne przechowywanie i użycie tokenu OpenRouter użytkownika
++
++Cel produktowy: użytkownik zapisuje w ustawieniach konta własny token API
++do OpenRoutera, a platforma używa go później **w jego imieniu** do wywołań
++`https://openrouter.ai/api/v1/...` wykonywanych po stronie serwera.
++
++Dokument jest planem — nie zmienia kodu, schematu bazy ani konfiguracji.
++
++## 1. Stan zastany (rozpoznanie repo)
++
++### Ustawienia konta
++
++- Strona: `apps/edu-platform/src/pages/profile.astro` — SSR, gate przez
++  `verifyAuth(Astro)` (`src/server/verifyAuth.ts`), redirect na `/login`
++  dla niezalogowanych.
++- Formularz: `src/components/ProfileForm.svelte` (wyspa `client:load`),
++  zapisuje przez `axios.put('/api/profile', …)` i osobne endpointy
++  avatara (`/api/profile/avatar`).
++- API: `src/pages/api/profile/index.ts` — wzorzec do skopiowania:
++  `resolveUserId(context)` czyta cookie `token`, weryfikuje JWT przez
++  `verifyToken(token, env.JWT_SECRET)` (`src/server/auth.ts`) i mapuje
++  e-mail na `userId` przez `getUserIdByEmail`
++  (`src/server/supabase/userService.ts`).
++
++### Warstwa danych
++
++- Supabase Postgres, dostęp wyłącznie z serwera przez klucz service-role:
++  `getSupabaseAdmin(env)` w `src/server/supabase/client.ts`.
++- Tabela `public.profiles` (migracja
++  `supabase/migrations/20260303000000_initial_schema.sql`, rozszerzana
++  w `20260508000000_profiles_name_avatar.sql`).
++- RLS jest włączone na wszystkich tabelach jako defense-in-depth
++  (`20260331000000_enable_rls.sql`), ale **service key omija RLS** —
++  każdy, kto ma `SUPABASE_SERVICE_KEY` albo dump bazy, widzi wszystkie
++  wiersze. To kluczowe założenie dla decyzji o szyfrowaniu (§2).
++
++### Sekrety i środowisko wykonania
++
++- Runtime to Cloudflare Worker (`wrangler.jsonc`); env wpada do route'ów
++  przez `context.locals.env` (middleware `src/middleware/index.ts`,
++  `cloudflare:workers`).
++- Sekrety serwera deklaruje `astro-env.ts` (`context: 'server'`,
++  `access: 'secret'`), a ich komplet na prodzie pilnuje kontrakt
++  `required-worker-secrets.json` + audyt
++  `scripts/audit-worker-secrets.mjs` (test dryfu w
++  `tests/scripts/audit-worker-secrets.test.ts`).
++- OpenRouter jest dziś używany **wyłącznie build-time** w narzędziach
++  contentowych (`scripts/repair-prework-code-blocks.ts`,
++  `scripts/translate-lesson-html.ts` — `process.env.OPENROUTER_API_KEY`,
++  stała `OPENROUTER_CHAT_URL`). W runtime Workera nie ma żadnej
++  integracji z OpenRouterem ani takiego sekretu
++  (brak w `required-worker-secrets.json`).
++
++### Istniejący wzorzec „tokenów" w repo — i dlaczego tu NIE pasuje
++
++`game_api_tokens` (migracja `20260304000000_game_api_tokens.sql`,
++`src/server/game/apiTokenManager.ts`) przechowuje **wyłącznie
++SHA-256 hash** tokenu, bo to token *wydawany przez nas* i tylko
++*weryfikowany* przy okazaniu — surowa wartość nie jest nam nigdy
++później potrzebna.
++
++Token OpenRoutera jest odwrotnym przypadkiem: to **my jesteśmy
++klientem** i musimy odtworzyć dokładną wartość, żeby wysłać ją
++w nagłówku `Authorization: Bearer …` do OpenRoutera. **Hash odpada
++z przyczyn funkcjonalnych** — hasz jest jednokierunkowy, więc feature
++przestałby działać. Świadomie odrzucamy też przechowywanie plain text
++(dump bazy / service key = wyciek tokenów wszystkich użytkowników,
++a to klucze obciążające karty kredytowe użytkowników).
++
++Wniosek: **szyfrowanie odwracalne po stronie serwera, kluczem spoza
++bazy** — jedyna opcja spełniająca jednocześnie „musimy odzyskać
++wartość" i „baza nie może jej zdradzić".
++
++## 2. Model przechowywania
++
++### Szyfrowanie
++
++- AES-256-GCM przez WebCrypto (`crypto.subtle` jest dostępne
++  w Workerach — precedens: `sha256hex` w `apiTokenManager.ts`).
++- Świeży, losowy IV (12 B) per zapis, przechowywany obok szyfrogramu;
++  GCM daje jednocześnie poufność i integralność (tag uwierzytelniający).
++- Klucz: nowy sekret Workera **`OPENROUTER_TOKEN_ENC_KEY`**
++  (32 B, base64) — poza bazą i poza repo:
++  - deklaracja w `astro-env.ts` (`context: 'server'`, `access: 'secret'`),
++  - wpis w `required-worker-secrets.json` (audyt i test dryfu wymuszą
++    obecność na prodzie),
++  - ustawiany przez `wrangler secret put OPENROUTER_TOKEN_ENC_KEY`.
++- Kolumna `key_version` od pierwszego dnia — umożliwia rotację klucza
++  szyfrującego bez migracji „big bang" (§5).
++
++### Schemat danych (przyszła migracja — tu tylko projekt)
++
++Osobna tabela zamiast kolumn w `profiles` (sekret nie powinien
++podróżować z każdym `select * from profiles`, np. w
++`getProfileByUserId` w `userService.ts`):
++
++```sql
++-- supabase/migrations/<timestamp>_user_openrouter_tokens.sql
++create table public.user_openrouter_tokens (
++  user_id      uuid primary key references auth.users(id) on delete cascade,
++  ciphertext   text not null,        -- base64(AES-256-GCM(token))
++  iv           text not null,        -- base64, losowe per zapis
++  key_version  smallint not null default 1,
++  token_last4  text not null,        -- jedyny fragment jawny (UI §6)
++  created_at   timestamptz default now(),
++  updated_at   timestamptz default now(),
++  last_used_at timestamptz
++);
++alter table public.user_openrouter_tokens enable row level security;
++```
++
++`on delete cascade` po `auth.users` — dokładnie jak `game_api_tokens`
++i `access_grants` — załatwia usunięcie konta (§5). Wpis do rejestru
++integralności (`supabase/migration-integrity.json`) i rollback
++w `supabase/rollback/` zgodnie z procesem `pnpm run
++supabase:migrations:check`.
++
++## 3. Ścieżka zapisu
++
++Nowy endpoint `src/pages/api/profile/openrouter-token.ts`, wzorowany
++1:1 na `src/pages/api/profile/index.ts` (ta sama autoryzacja
++`resolveUserId` — do wydzielenia wspólnego helpera, bo dziś jest
++prywatny w `index.ts`):
++
++- `PUT` — body `{ token: string }`:
++  1. walidacja formatu (prefiks `sk-or-`, sensowna długość, trim),
++  2. (opcjonalnie, ale warto) walidacja żywości: serwerowy `GET
++     https://openrouter.ai/api/v1/key` z nagłówkiem `Bearer <token>` —
++     odrzucamy literówki od razu, bez zapisu,
++  3. szyfrowanie i `upsert` przez nowy serwis
++     `src/server/supabase/openRouterTokenService.ts`
++     (`getSupabaseAdmin`, wzorem `userService.ts`),
++  4. odpowiedź: `{ configured: true, last4 }` — **nigdy pełny token**.
++- `DELETE` — twarde `delete` wiersza; odpowiedź `{ configured: false }`.
++- `GET` — wyłącznie status: `{ configured: boolean, last4?, updatedAt? }`.
++  **Żaden endpoint nie zwraca wartości tokenu** — token po zapisie jest
++  write-only z perspektywy klienta.
++
++Endpoint owinąć w `withApiErrorReporting`
++(`src/server/observability/withApiErrorReporting.ts`) jak pozostałe
++route'y — z zastrzeżeniami o telemetrii z §4.
++
++## 4. Ścieżka odczytu i użycia
++
++- Wywołania OpenRoutera wychodzą **wyłącznie z serwera** (API route /
++  moduły w `src/server/`). Przeglądarka nigdy nie dostaje tokenu i nigdy
++  nie woła `openrouter.ai` bezpośrednio — token w JS klienta
++  (localStorage, cookie czytelne dla skryptów, props wyspy Svelte) jest
++  poza dyskusją.
++- Jedyny punkt dostępu do sekretu: nowy moduł
++  `src/server/openrouter/tokenVault.ts`:
++  - `getDecryptedToken(userId, env)` — odczyt wiersza, wybór klucza po
++    `key_version`, `crypto.subtle.decrypt`, zwrot stringa **tylko do
++    zmiennej lokalnej wywołującego route'a**; bez cache w KV, bez
++    globali modułu, bez `waitUntil` z tokenem w domknięciu,
++  - `callOpenRouter(userId, env, request)` — docelowo lepiej: moduł sam
++    dokleja nagłówek i wykonuje `fetch`, więc odszyfrowany token w ogóle
++    nie opuszcza `tokenVault.ts`; route'y dostają tylko odpowiedź.
++- Kto ma dostęp do odszyfrowanej wartości: wyłącznie kod Workera
++  w trakcie obsługi żądania zalogowanego właściciela tokenu
++  (`resolveUserId` → `userId` → jego wiersz). Odszyfrowanie dzieje się
++  w pamięci izolatu, per żądanie.
++- `401/403` z OpenRoutera → komunikat dla użytkownika „token wygląda na
++  nieaktualny" + stan `invalid` w UI; **bez** treści tokenu i bez
++  surowej odpowiedzi upstreamu w komunikacie błędu.
++- Aktualizacja `last_used_at` przy udanym wywołaniu — daje
++  użytkownikowi (i nam) sygnał, czy token w ogóle pracuje.
++
++## 5. Cykl życia
++
++- **Nadpisanie / rotacja tokenu użytkownika**: `PUT` zastępuje wiersz
++  (nowy IV, nowy szyfrogram, nowe `last4`, `updated_at`). UI wymaga
++  potwierdzenia przy nadpisaniu (§6).
++- **Usunięcie tokenu**: `DELETE` z §3; natychmiastowe, bez soft-delete —
++  nie ma powodu przetrzymywać cudzego sekretu.
++- **Usunięcie konta**: `on delete cascade` po `auth.users` usuwa wiersz
++  razem z kontem — spójnie z resztą schematu.
++- **Rotacja klucza szyfrującego** (`OPENROUTER_TOKEN_ENC_KEY`):
++  nowy sekret jako wersja N+1, deszyfrowanie po `key_version`,
++  re-encrypt leniwie przy najbliższym użyciu/zapisie; stary klucz
++  wycofujemy, gdy nie ma wierszy ze starą wersją. Kompromitacja klucza:
++  unieważniamy wszystkie wiersze (delete + komunikat w UI o ponownym
++  podaniu tokenu) — nie próbujemy „ratować" sekretów zaszyfrowanych
++  skompromitowanym kluczem.
++
++## 6. UI ustawień (`profile.astro` / `ProfileForm.svelte`)
++
++- Pole `input type="password"` (maskowanie w trakcie wpisywania),
++  czyszczone po zapisie.
++- Po zapisie UI pokazuje **stan**: „Token ustawiony (…last4, data)" /
++  „Brak tokenu" — nigdy podgląd wartości; nie ma przycisku „pokaż".
++- Nadpisanie i usunięcie za potwierdzeniem (wzorem istniejącego
++  potwierdzenia usunięcia avatara w `ProfileForm.svelte`).
++- Sekcja z krótkim wyjaśnieniem, po co token i linkiem do panelu kluczy
++  OpenRoutera (użytkownik powinien wystawić **osobny klucz z limitem
++  wydatków** dla naszej integracji — dopisać do copy).
++
++## 7. Wycieki poboczne (logi, błędy, telemetria)
++
++- **Logi**: `src/lib/logger.ts` przepuszcza wpisy przez
++  `sanitizeTelemetry` (`src/lib/observability/telemetryPrivacy.ts`) —
++  jest już `BEARER_PATTERN`; dodać wzorzec redakcji dla surowych kluczy
++  `sk-or-…`, żeby token wklejony przypadkiem w log wylądował jako
++  `[REDACTED]` także bez prefiksu `Bearer`.
++- **Sentry**: endpointy owinięte `withApiErrorReporting` nie mogą
++  dołączać body żądania ani odszyfrowanego tokenu do kontekstu zdarzenia
++  (`sentry.setContext`); w razie potrzeby logujemy wyłącznie `last4`.
++- **Komunikaty błędów**: odpowiedzi 4xx/5xx z §3–4 nie zawierają tokenu
++  ani fragmentów odpowiedzi OpenRoutera mogących go echować.
++- **Analytics Engine / KV**: token nie trafia do żadnego bindingu poza
++  Postgresem (w szczególności nie do KV — to nie jest cache'owalna
++  wartość).
++- **Testy i fixtures**: wyłącznie tokeny fikcyjne (`sk-or-test-…`).
++
++## 8. Zagrożenia i świadome kompromisy
++
++| Zagrożenie | Mitygacja | Ryzyko rezydualne |
++|---|---|---|
++| Dump bazy / wyciek `SUPABASE_SERVICE_KEY` | szyfrogram bez klucza jest bezużyteczny | metadane (kto ma token, `last4`) |
++| Kompromitacja Workera (kod + env naraz) | poza zasięgiem szyfrowania at-rest; minimalizacja: jeden punkt deszyfracji, brak logowania | pełny dostęp — akceptowane, jak dla `JWT_SECRET` |
++| Token w logach/Sentry | redakcja `sk-or-` w `telemetryPrivacy.ts`, zakaz body w evencie | błąd ludzki w nowym kodzie |
++| XSS na stronie profilu | token write-only: nie istnieje endpoint zwracający wartość | atakujący może podmienić/usunąć token (wykrywalne po `last4`/dacie) |
++| CSRF na `PUT/DELETE` | auth cookie + JSON body jak w `/api/profile`; te same zasady co reszta API | jak pozostałe endpointy mutujące |
++
++## 9. Kolejność wdrożenia
++
++1. Migracja `user_openrouter_tokens` + rollback + wpis integralności.
++2. Sekret `OPENROUTER_TOKEN_ENC_KEY` (astro-env, kontrakt, wrangler).
++3. `openRouterTokenService.ts` (szyfrowanie/deszyfrowanie + CRUD) +
++   testy jednostkowe na wektorach (encrypt→decrypt, zły klucz, zła
++   wersja).
++4. Endpoint `/api/profile/openrouter-token` + testy (wzorem
++   `lesson-progress.test.ts` dla route'ów).
++5. UI w `ProfileForm.svelte`.
++6. Redakcja `sk-or-` w `telemetryPrivacy.ts` + test.
++7. Pierwszy konsument w `src/server/openrouter/` (osobny feature).
++
++## 10. Pytania otwarte
++
++- Czy pierwszy konsument potrzebuje limitowania (per user / per lekcja)?
++  Jeśli tak: wzorzec `quotaService.ts` z mission-log jest gotowy do
++  skopiowania.
++- Czy chcemy szyfrować istniejące sekrety innych integracji tym samym
++  mechanizmem (`key_version` już to umożliwia)? Poza zakresem tego
++  planu.

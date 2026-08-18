@@ -1,0 +1,91 @@
+diff --git a/docs/plans/openrouter-token-storage.md b/docs/plans/openrouter-token-storage.md
+new file mode 100644
+index 0000000..cd7dd72
+--- /dev/null
++++ b/docs/plans/openrouter-token-storage.md
+@@ -0,0 +1,85 @@
++# Plan: przechowywanie tokenu OpenRouter użytkownika
++
++## Rozpoznanie repo
++
++- Ustawienia konta żyją w `apps/edu-platform/src/pages/profile.astro`
++  (gate `verifyAuth` z `src/server/verifyAuth.ts`) i w formularzu
++  `src/components/ProfileForm.svelte`, który zapisuje dane przez
++  `axios.put('/api/profile', …)`.
++- API profilu: `src/pages/api/profile/index.ts` — autoryzacja przez
++  cookie `token` i `verifyToken(token, env.JWT_SECRET)`
++  (`src/server/auth.ts`), mapowanie e-maila na `userId` przez
++  `getUserIdByEmail` z `src/server/supabase/userService.ts`.
++- Dane trzymamy w Supabase Postgres, dostęp przez klienta service-role
++  `getSupabaseAdmin(env)` (`src/server/supabase/client.ts`); RLS włączone
++  migracją `20260331000000_enable_rls.sql`.
++- W repo istnieje już gotowy, przetestowany wzorzec bezpiecznego
++  przechowywania tokenów: `game_api_tokens`
++  (migracja `supabase/migrations/20260304000000_game_api_tokens.sql`
++  + `src/server/game/apiTokenManager.ts`). Komentarz w migracji mówi
++  wprost: „Raw tokens are NEVER stored — only their SHA-256 hex hash".
++
++## Decyzja: idziemy istniejącym wzorcem `game_api_tokens`
++
++Skoro repo ma już sprawdzony i audytowalny sposób przechowywania tokenów,
++nie wymyślamy nowego. Token OpenRoutera potraktujemy dokładnie tak samo
++jak tokeny gry:
++
++1. Nowa tabela `user_openrouter_tokens` wzorowana na `game_api_tokens`:
++
++   ```sql
++   create table public.user_openrouter_tokens (
++     id          uuid primary key default gen_random_uuid(),
++     user_id     uuid references auth.users(id) on delete cascade not null,
++     token_hash  text unique not null,   -- hex(sha256(raw_token))
++     created_at  timestamptz default now(),
++     last_used   timestamptz,
++     revoked     boolean default false
++   );
++   ```
++
++2. Hashowanie funkcją `sha256hex` — do wyciągnięcia z
++   `src/server/game/apiTokenManager.ts` do wspólnego helpera, żeby nie
++   duplikować kodu.
++3. Surowego tokenu nie przechowujemy nigdzie — do bazy trafia wyłącznie
++   hash, więc nawet pełny dump bazy niczego nie zdradza. To najmocniejsza
++   możliwa gwarancja: nie da się wykraść czegoś, czego nie ma.
++
++## Ścieżka zapisu
++
++- Nowy endpoint `src/pages/api/profile/openrouter-token.ts` wzorem
++  `index.ts`: `PUT` przyjmuje `{ token }`, waliduje prefiks `sk-or-`,
++  liczy `sha256hex(token)` i upsertuje wiersz; `DELETE` usuwa wiersz.
++- Odpowiedź `PUT`: `{ configured: true }` — nie odsyłamy tokenu.
++
++## Ścieżka użycia
++
++- Przy wywołaniu OpenRoutera serwer pobiera wiersz użytkownika
++  z `user_openrouter_tokens` i używa tokenu do żądania
++  `https://openrouter.ai/api/v1/chat/completions` (wzorem stałej
++  `OPENROUTER_CHAT_URL` z `scripts/repair-prework-code-blocks.ts`),
++  doklejając nagłówek `Authorization: Bearer <token>`.
++- Wywołania wykonujemy wyłącznie po stronie serwera (API route'y),
++  nigdy z przeglądarki.
++
++## Cykl życia i UI
++
++- Nadpisanie: `PUT` zastępuje wiersz (nowy hash).
++- Usunięcie tokenu: `DELETE`; usunięcie konta: `on delete cascade`.
++- UI w `ProfileForm.svelte`: pole `type="password"`, po zapisie stan
++  „Token ustawiony" bez podglądu wartości, potwierdzenie przy nadpisaniu.
++
++## Higiena
++
++- Nie logujemy surowego tokenu (`src/lib/logger.ts` przechodzi przez
++  `sanitizeTelemetry`); w logach co najwyżej hash.
++- Sentry (`withApiErrorReporting`) nie dostaje body żądania.
++
++## Kolejność wdrożenia
++
++1. Migracja `user_openrouter_tokens` + rollback + wpis do
++   `supabase/migration-integrity.json`.
++2. Wspólny helper `sha256hex`.
++3. Endpoint `/api/profile/openrouter-token` + testy.
++4. UI w `ProfileForm.svelte`.
++5. Pierwszy konsument OpenRoutera po stronie serwera.
