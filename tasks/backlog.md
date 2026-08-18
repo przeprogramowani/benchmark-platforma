@@ -39,7 +39,7 @@ Skille tylko edytują ten plik — gitem zarządza użytkownik.
 
 ## plan-openrouter-token-storage
 
-- **Status**: in-progress
+- **Status**: done
 - **Dodano**: 2026-08-18
 - **Typ**: dokumentacja
 - **Repo bazowe**: przeprogramowani-edu
