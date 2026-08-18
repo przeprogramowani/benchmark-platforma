@@ -1,0 +1,37 @@
+# Asercja tests/courses-view-toggle — zadanie add-courses-view-toggle.
+# Schemat: .bench-kit/runner/src/schemas/check.ts
+#
+# Cztery checki przy `score: fraction` dają skalę 0 / 0.25 / 0.5 / 0.75 / 1,
+# która odróżnia stopnie wykonania: sam przełącznik z ARIA, poprawny widok
+# domyślny, spójny zbiór kursów w obu widokach i aplikację zapisanego widoku
+# przed pierwszym malowaniem. Wszystkie cztery renderują stronę /courses
+# przez Astro Container w środowisku node (bez window/localStorage), więc
+# każdy odczyt localStorage na ścieżce renderu serwerowego wywala od razu
+# wszystkie cztery — pułapka SSR z opisu zadania jest mierzona konstrukcją,
+# nie osobnym checkiem.
+#
+# Check "oba widoki pokazują ten sam zbiór kursów" jest na stanie startowym
+# zielony (jeden widok = zbiór trywialnie spójny) — to guard łapiący listę,
+# która gubi kursy zaplanowane/niedostępne; miarą pracy są pozostałe trzy,
+# stąd deklaracja reference: fail (score < 1 na starcie).
+#
+# Render strony wymaga zainstalowanych zależności repo — instalacja jest
+# w setup.sh, wspólnym dla checków (kolejne trafiają na gotowe node_modules).
+score: fraction
+checks:
+  - name: view-toggle-accessible-control
+    run: |
+      . "$ASSERTION_DIR"/setup.sh
+      pnpm exec vitest run --config .bench-courses-view-toggle.vitest.config.ts -t 'przełącznik widoku istnieje i komunikuje stan wyboru'
+  - name: default-view-is-grid
+    run: |
+      . "$ASSERTION_DIR"/setup.sh
+      pnpm exec vitest run --config .bench-courses-view-toggle.vitest.config.ts -t 'domyślnym widokiem bez zapisanego wyboru pozostają kafelki'
+  - name: same-course-set-in-both-views
+    run: |
+      . "$ASSERTION_DIR"/setup.sh
+      pnpm exec vitest run --config .bench-courses-view-toggle.vitest.config.ts -t 'oba widoki pokazują ten sam, kompletny zbiór kursów'
+  - name: saved-view-applied-before-paint
+    run: |
+      . "$ASSERTION_DIR"/setup.sh
+      pnpm exec vitest run --config .bench-courses-view-toggle.vitest.config.ts -t 'zapisany widok jest aplikowany skryptem inline przed malowaniem'
