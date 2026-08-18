@@ -65,11 +65,25 @@ zbudowane na domysłach.
    i pracuj wyłącznie tam; sporadyczny `index.lock` po prostu ponów.
    Jeśli klonu brakuje, zgłoś to w raporcie zamiast klonować obok
    innych subagentów.
+9. **Postęp raportujesz na bieżąco w `tasks/<nazwa>/todo.md`.** To
+   jedyny kanał podglądu twojej pracy w toku — orkiestrator
+   i użytkownik czytają go, zanim wrócisz z raportem. Tworzysz go jako
+   pierwszą czynność (krok 0 procedury), aktualizujesz bezpośrednio po
+   każdym kroku (nie zbiorczo na końcu), a przy oddaniu pracy usuwasz:
+   `task_hash` liczy się ze **wszystkich** plików katalogu zadania,
+   więc pozostawiony plik roboczy wszedłby na stałe w tożsamość ery.
 
 ## Narzędzia runnera
 
 Uruchamiane z korzenia instancji: `node --experimental-strip-types
 .bench-kit/runner/src/index.ts <komenda>` (dalej: `bench <komenda>`).
+
+Środowisko oceny (obraz `bench-base`, zależności runnera, docker)
+przygotował i sprawdził orkiestrator przed twoim startem. Jeśli mimo
+to komenda `bench` pada z powodów infrastrukturalnych (build obrazu,
+sieć/TLS, docker), zgłoś to w raporcie i odmów, zamiast naprawiać
+środowisko — to strefa wspólna paczki, a twoja naprawa wyścigałaby
+się z sąsiadami budującymi równolegle.
 
 - `bench assert <ref...> --task <nazwa> [--no-overlay] [--patch <plik>]...`
   — asercje nie-LLM-owe na stanie startowym zadania (repo@pin + overlay);
@@ -92,15 +106,51 @@ Uruchamiane z korzenia instancji: `node --experimental-strip-types
 
 ## Procedura
 
+### 0. Plan pracy — todo.md
+
+Zanim cokolwiek zbudujesz, utwórz `tasks/<nazwa>/todo.md` (razem
+z katalogiem zadania, jeśli jeszcze nie istnieje): checklista kroków
+tej procedury, którą będziesz odhaczać w trakcie pracy:
+
+```markdown
+# <nazwa> — postęp budowy
+- [ ] 1. Pin
+- [ ] 2. Overlay (zadania typu "napraw")
+- [ ] 3. prompt.md
+- [ ] 4. Asercje (+ diffy kalibracyjne)
+- [ ] 5. Wagi
+- [ ] 6. Samosprawdzenie
+- [ ] 7. Oddanie pracy
+```
+
+Aktualizuj go **bezpośrednio po każdym kroku** (zasada 9): odhaczenie
+plus jedno-dwa zdania konkretu — wybrany SHA, nazwy zbudowanych
+asercji, wynik `bench assert`. W krokach długich (asercje,
+samosprawdzenie) dopisuj także w trakcie, po każdej domkniętej
+bramce, a problemy i decyzje notuj w momencie ich podjęcia. Ten plik
+czyta na żywo orkiestrator i użytkownik — ma opisywać stan faktyczny,
+nie plan; wpis wsteczny uzupełniony tuż przed raportem mija się
+z celem.
+
+Przy oddaniu pracy (krok 7) todo.md **usuwasz** — także przy odmowie
+(wtedy usuń również katalog zadania, jeśli nic poza todo.md w nim nie
+powstało). Wszystko, co ma przetrwać, należy do raportu końcowego.
+
 ### 1. Pin
 
-Wybierz konkretny commit repo bazowego: świeży, ale stabilny —
-najlepiej ostatni zielony na CI. Repo przeglądaj w lokalnym klonie
-`.repos/<nazwa>/` (przygotowanym przez orkiestratora — zasada 8);
-wybieraj commity **istniejące na remote** (runner robi własny płytki
-fetch z URL-a). Zweryfikuj, że zlecenie ma na nim sens: przejrzyj repo
-na tym commicie, sprawdź że pliki, których zadanie dotyczy, istnieją,
-a projekt się buduje. Pełny SHA (40 znaków) do `task.yaml`.
+Orkiestrator podał ci w prompcie **pin-kandydata** (SHA + dowód
+zielonego CI) dla repo bazowego — nie powtarzaj jego pracy: nie
+przeglądasz historii i nie odpytujesz CI od zera. Twoja część to
+weryfikacja, że **twoje zlecenie** ma na tym commicie sens: przejrzyj
+repo na tym commicie (klon `.repos/<nazwa>/`, stan na pinie przez
+worktree — zasada 8), sprawdź, że pliki, których zadanie dotyczy,
+istnieją, a projekt się buduje. Pasuje → pełny SHA (40 znaków) do
+`task.yaml`. Nie pasuje (np. obszar zadania świeżo przebudowany) →
+wybierz inny commit i **uzasadnij odstępstwo w raporcie**.
+
+Gdy kandydata w prompcie nie ma, wybierz sam: świeży, ale stabilny —
+najlepiej ostatni zielony na CI. Zawsze wybieraj commity **istniejące
+na remote** (runner robi własny płytki fetch z URL-a).
 
 ### 2. Overlay (zadania typu "napraw")
 
@@ -167,9 +217,13 @@ Wejście do kontenera oceny odtwarza środowisko od zera i kosztuje minuty
   szybsza niż kontenerowa; do kontenera wchodzisz z gotową asercją,
   nie z hipotezą.
 - **Wytwórz od razu komplet diffów**: wzorzec + warianty, które
-  przewidujesz dla kalibracji rubryki (zwykle: naprawa częściowa /
-  objawowa, poprawna naprawa z nadmiarowym zakresem, poprawna naprawa
-  nieidiomatyczna). Kontekst repo masz otwarty raz — to moment, w którym
+  przewidujesz dla kalibracji rubryki. Jeśli wpis zlecenia ma pole
+  **Oś oceny**, to ono jest wiążące: warianty mają rozciągać skalę
+  wzdłuż tej osi (np. oś "minimalny diff" → wariant poprawny, ale
+  rozlazły), a zadeklarowane do's and dont's trafiają do materiału
+  dla rubryki. Bez osi w zleceniu dobierz warianty sam (zwykle:
+  naprawa częściowa / objawowa, poprawna naprawa z nadmiarowym
+  zakresem, poprawna naprawa nieidiomatyczna). Kontekst repo masz otwarty raz — to moment, w którym
   warianty kosztują minuty zamiast osobnej sesji. Zapisz je od razu
   w `evaluation-pool/judge/<zadanie>-calibration/`.
 - **Każdy diff przepuść przez tanie bramki**, zanim cokolwiek zmierzysz:
@@ -201,7 +255,8 @@ musi sama instalować swoje zależności (etap oceny może używać sieci)
 i nie może karać agenta za zastane problemy repo bazowego.
 
 Dla składowej `judge/*`: rubrykę twórz/kalibruj skillem **bench-rubric**,
-nie ręcznie w ramach tej procedury.
+nie ręcznie w ramach tej procedury; pole **Oś oceny** ze zlecenia
+przekaż tam jako punkt wyjścia kryteriów.
 
 ### 5. Wagi
 
@@ -229,7 +284,14 @@ przejść zanim pójdziesz dalej:
    ma czerwoną miarę pracy (pkt 1) i — jeśli jest składowa judge —
    `bench judge --task <nazwa> --patch <pusty.diff>` daje niski wynik.
 4. Próbny `bench run --smoke --tasks <nazwa> --models <tani-model>` +
-   `bench evaluate` (budżet instancji pilnuje kosztów — zasada 6).
+   `bench evaluate` (budżet instancji pilnuje kosztów — zasada 6) —
+   **o ile sesja ma klucze API dostawców**. Gdy kluczy nie ma, nie
+   obchodź tego i nie traktuj jak porażki: odnotuj w raporcie „smoke
+   odroczony — brak sekretów w sesji" i oddaj pracę; próbny run
+   wszystkich nowych zadań paczki wykona się tam, gdzie sekrety są,
+   po przyjęciu plików przez użytkownika (bramka paczki
+   u orkiestratora, nie rytuał per zadanie). Punkty 1–3 pozostają
+   bezwarunkowe.
    Zadanie, którego nie da się przejść, albo które przechodzi się pustym
    diffem, wraca do kroku 2/4.
 
@@ -239,7 +301,10 @@ Zostaw komplet plików w drzewie roboczym: katalog zadania + ewentualne
 nowe asercje w puli + zbiór kalibracyjny. Nic w gicie (zasada 1) —
 o commicie/PR-rze decyduje użytkownik. Wzorcowego rozwiązania **nie**
 zostawiaj w `tasks/` (przeciekłoby do workspace'u agenta) — jego
-miejsce to `evaluation-pool/judge/<zadanie>-calibration/`.
+miejsce to `evaluation-pool/judge/<zadanie>-calibration/`. Na koniec
+usuń `tasks/<nazwa>/todo.md` (zasada 9) — plik postępu to kanał
+podglądu na czas budowy, nie część zadania; pozostawiony wszedłby
+w `task_hash`.
 
 ### 8. Raport końcowy
 
