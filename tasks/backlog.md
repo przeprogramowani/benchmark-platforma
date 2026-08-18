@@ -6,7 +6,7 @@ Skille tylko edytują ten plik — gitem zarządza użytkownik.
 
 ## add-courses-view-toggle
 
-- **Status**: in-progress
+- **Status**: done
 - **Dodano**: 2026-08-18
 - **Typ**: implementacja
 - **Repo bazowe**: przeprogramowani-edu
