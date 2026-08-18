@@ -1,0 +1,64 @@
+diff --git a/docs/plans/openrouter-token-storage.md b/docs/plans/openrouter-token-storage.md
+new file mode 100644
+index 0000000..c29fedb
+--- /dev/null
++++ b/docs/plans/openrouter-token-storage.md
+@@ -0,0 +1,58 @@
++# Plan: token OpenRoutera użytkownika (podejście lekkie, bez backendu)
++
++## Motywacja
++
++Skoro token należy do użytkownika i to jego konto w OpenRouterze płaci za
++wywołania, najprościej jest w ogóle nie przeciągać sekretu przez nasz
++backend. Mniej kodu po stronie serwera (Cloudflare Worker,
++`apps/edu-platform`), zero nowych migracji Supabase, zero nowych sekretów
++w `wrangler.jsonc` — a użytkownik zachowuje pełną kontrolę nad swoim
++kluczem.
++
++## Przechowywanie
++
++- Token zapisujemy w przeglądarce użytkownika: `localStorage` pod kluczem
++  `openrouter_api_token`, zapisywany z nowej sekcji formularza
++  w `src/components/ProfileForm.svelte` (`apps/edu-platform`).
++- Dzięki temu sekret nigdy nie dotyka naszej bazy — nie musimy go
++  szyfrować ani martwić się o dump Postgresa; RLS i service key
++  (`getSupabaseAdmin`) w ogóle nie wchodzą do gry.
++- Dla wygody użytkownika przy zmianie urządzenia dodatkowo zapiszemy
++  kopię tokenu w `profiles` (kolumna `openrouter_token text`) —
++  synchronizacja przez istniejący `PUT /api/profile`
++  (`src/pages/api/profile/index.ts`, `updateProfile`
++  w `src/server/supabase/userService.ts`). `GET` profilu zwróci token,
++  a formularz podstawi go do pola, żeby użytkownik mógł go podejrzeć
++  i edytować.
++
++## Użycie
++
++- Wywołania OpenRoutera wykonujemy bezpośrednio z przeglądarki
++  (wyspy Svelte, `fetch('https://openrouter.ai/api/v1/chat/completions')`
++  z nagłówkiem `Authorization: Bearer <token>` czytanym z localStorage).
++  OpenRouter wspiera CORS dla wywołań z frontendu, a taki ruch nie
++  obciąża naszego Workera (limity CPU/subrequestów Cloudflare).
++- Backend nie musi nic wiedzieć o tokenie — nie powstaje żaden nowy
++  endpoint ani serwis w `src/server/`.
++
++## Cykl życia
++
++- Zmiana tokenu: użytkownik nadpisuje pole w formularzu profilu.
++- Usunięcie: przycisk „wyczyść" kasuje wpis z localStorage i kolumnę
++  w `profiles` (pusty string w `PUT /api/profile`).
++- Wylogowanie nie czyści localStorage — token zostaje na urządzeniu,
++  żeby po ponownym zalogowaniu nie trzeba było wpisywać go od nowa.
++
++## UI
++
++- Pole tekstowe w `ProfileForm.svelte` z wartością tokenu (użytkownik
++  widzi, co ma zapisane — łatwiej zdiagnozować literówkę), obok przycisk
++  „kopiuj".
++- Walidacja prefiksu `sk-or-` przed zapisem.
++
++## Zalety podejścia
++
++- Najmniejsza możliwa powierzchnia zmian: jeden komponent Svelte, jedna
++  kolumna w `profiles`, zero nowej kryptografii.
++- Brak kosztów obliczeniowych szyfrowania po stronie Workera.
++- Sekret „u właściciela" — filozoficznie najbliżej modelu BYOK.

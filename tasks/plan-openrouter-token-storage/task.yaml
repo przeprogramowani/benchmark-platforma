@@ -1,0 +1,56 @@
+# Zadanie koncepcyjne (research + dokumentacja): plan bezpiecznego
+# przechowywania i użycia tokenu OpenRouter użytkownika. Bez zmian w kodzie
+# — deliverable to jeden plik markdown pod narzuconą ścieżką.
+# Schemat: .bench-kit/runner/src/schemas/task.ts
+
+repo: przeprogramowani-edu
+
+# Ostatni commit na origin/master z zielonym CI (workflow ci.yml,
+# run "completed success" — zweryfikowane przez GitHub Actions API).
+# Wszystkie obszary, które plan ma rozpoznać, istnieją na tym pinie
+# w stanie opisywanym przez rubrykę: profil (src/pages/profile.astro,
+# /api/profile), auth JWT (src/server/auth.ts), warstwa Supabase
+# service-role (src/server/supabase/client.ts), kontrakt sekretów Workera
+# (required-worker-secrets.json, astro-env.ts), wzorzec hashowanych
+# tokenów game_api_tokens oraz build-time'owe użycie OPENROUTER_API_KEY
+# w scripts/. Katalog docs/plans/ nie istnieje — agent go tworzy.
+commit: "c393bb8ace8bdc88c3de36a7406f903ba7230d68"
+
+# Zadanie nie buduje projektu i nie odpala testów (prompt wprost tego
+# zakazuje) — czas idzie na eksplorację repo i pisanie planu. 600 s
+# zgodnie ze zleceniem (trudność: średnia).
+timeout_s: 600
+
+# Bez `prepare`: agent nie potrzebuje node_modules do czytania kodu
+# i pisania markdowna, a asercje nie instalują zależności.
+
+evaluation:
+  - static/openrouter-token-plan-hygiene
+  - judge/plan-openrouter-token-storage
+
+weights:
+  # Higiena deliverable'u, binarnie: plik planu istnieje i niepusty ORAZ
+  # diff nie zawiera niczego poza nim. Pusty diff → 0; świetny plan
+  # z przemyconą zmianą kodu → też 0. To guard granic i zarazem jedyna
+  # deterministyczna miara pracy — jakości planu nie widzi.
+  static: 0.3
+  # Główny nośnik oceny (zgodnie ze zleceniem): jakość myślenia
+  # o bezpieczeństwie — model przechowywania (szyfrowanie odwracalne,
+  # klucz poza bazą, jawne odrzucenie hasha), ścieżka użycia wyłącznie
+  # serwerowa, cykl życia, wycieki poboczne, UI — oraz zakotwiczenie
+  # planu w realnych ścieżkach tego repo zamiast generycznej rozprawki.
+  judge: 0.7
+  tests: 0
+  e2e: 0
+
+# Stan startowy (pusty diff): plik planu nie istnieje → asercja czerwona.
+# Guard granicy wewnątrz tej samej asercji jest na starcie zielony
+# (czyste drzewo), ale składowa jest binarna — patrz komentarz
+# w evaluation-pool/static/openrouter-token-plan-hygiene/check.yaml.
+reference:
+  static/openrouter-token-plan-hygiene: fail
+
+# Rubryka cytuje konkretne ścieżki i stan repo (brak runtime'owej
+# integracji OpenRoutera); pin siedzi na ruchliwym masterze, więc data
+# spójna z pozostałymi zadaniami instancji.
+expires: "2027-02-28"

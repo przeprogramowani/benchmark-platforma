@@ -1,0 +1,84 @@
+diff --git a/apps/edu-platform/src/components/CourseList.astro b/apps/edu-platform/src/components/CourseList.astro
+index 937b281..42fe03d 100644
+--- a/apps/edu-platform/src/components/CourseList.astro
++++ b/apps/edu-platform/src/components/CourseList.astro
+@@ -135,20 +135,42 @@ const SHOW_GAMES_SECTION = true;
+ const SHOW_MISSION_LOG = availableCourseSlugSet.has('10xdevs-3');
+ ---
+ 
+-<div class="py-8">
++<div class="py-8 group/views" data-course-list-root data-view="grid">
+   <!-- Courses -->
+   <div class="mb-12">
+-    <h2 class="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-5">Twoje szkolenia</h2>
+-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
++    <div class="flex items-center justify-between gap-4 mb-5">
++      <h2 class="text-xs font-semibold uppercase tracking-widest text-gray-500">Twoje szkolenia</h2>
++      <div
++        role="group"
++        aria-label="Widok listy kursów"
++        class="flex items-center rounded-lg border border-white/10 bg-gray-800/60 p-0.5">
++        <button
++          type="button"
++          data-course-view-option="grid"
++          aria-pressed="true"
++          class="rounded-md px-2.5 py-1 text-xs font-medium text-gray-400 transition-colors hover:text-white aria-pressed:bg-gray-700 aria-pressed:text-white">
++          Kafelki
++        </button>
++        <button
++          type="button"
++          data-course-view-option="list"
++          aria-pressed="false"
++          class="rounded-md px-2.5 py-1 text-xs font-medium text-gray-400 transition-colors hover:text-white aria-pressed:bg-gray-700 aria-pressed:text-white">
++          Lista
++        </button>
++      </div>
++    </div>
++    <div
++      class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:group-data-[view=list]/views:grid-cols-1 lg:group-data-[view=list]/views:grid-cols-1">
+       {
+         courses.map((course) => (
+           <article
+             data-course-id={course.courseId}
+             data-course-status={course.status}
+             data-available-from={course.availableFrom}
+-            class={`relative rounded-xl overflow-hidden flex flex-col border border-white/10 ${course.theme} ${course.status === 'available' ? 'group transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/50 hover:border-white/20' : course.status === 'unavailable' ? 'opacity-75' : ''}`}>
++            class={`relative rounded-xl overflow-hidden flex flex-col group-data-[view=list]/views:flex-row border border-white/10 ${course.theme} ${course.status === 'available' ? 'group transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/50 hover:border-white/20' : course.status === 'unavailable' ? 'opacity-75' : ''}`}>
+             <!-- Thumbnail -->
+-            <div class="relative aspect-video overflow-hidden">
++            <div class="relative aspect-video overflow-hidden group-data-[view=list]/views:w-40 sm:group-data-[view=list]/views:w-64 group-data-[view=list]/views:shrink-0 group-data-[view=list]/views:self-stretch">
+               {course.imageUrl ? (
+                 <img
+                   src={course.imageUrl}
+@@ -341,3 +363,31 @@ const SHOW_MISSION_LOG = availableCourseSlugSet.has('10xdevs-3');
+     </div>
+   </div>}
+ </div>
++
++<script>
++  // Obsługa przełącznika widoku: klik ustawia data-view na kontenerze
++  // (prezentacją steruje wyłącznie CSS), zapisuje wybór w localStorage
++  // i aktualizuje aria-pressed. Stan początkowy aria synchronizuje się
++  // z widokiem zaaplikowanym przed malowaniem przez skrypt inline wyżej.
++  const root = document.querySelector<HTMLElement>('[data-course-list-root]');
++  const options = Array.from(
++    document.querySelectorAll<HTMLButtonElement>('[data-course-view-option]')
++  );
++
++  function applyView(view: string): void {
++    if (!root) return;
++    root.dataset.view = view;
++    for (const option of options) {
++      option.setAttribute('aria-pressed', String(option.dataset.courseViewOption === view));
++    }
++  }
++
++  if (root) {
++    applyView(root.dataset.view === 'list' ? 'list' : 'grid');
++    for (const option of options) {
++      option.addEventListener('click', () => {
++        applyView(option.dataset.courseViewOption === 'list' ? 'list' : 'grid');
++      });
++    }
++  }
++</script>

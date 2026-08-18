@@ -1,0 +1,64 @@
+diff --git a/docs/plans/openrouter-token-storage.md b/docs/plans/openrouter-token-storage.md
+new file mode 100644
+index 0000000..2a7dbf5
+--- /dev/null
++++ b/docs/plans/openrouter-token-storage.md
+@@ -0,0 +1,58 @@
++# Plan: przechowywanie tokenu OpenRouter użytkownika
++
++## Wprowadzenie
++
++Bezpieczne przechowywanie kluczy API użytkowników to jeden z najważniejszych
++aspektów budowania nowoczesnych aplikacji SaaS. Klucz API jest de facto
++hasłem — jego wyciek może narazić użytkownika na koszty finansowe
++i utratę zaufania do platformy. Poniższy plan opisuje najlepsze praktyki
++branżowe, które powinniśmy zastosować.
++
++## Zasady ogólne
++
++1. **Nigdy nie przechowuj sekretów w postaci jawnej.** Wszystkie wrażliwe
++   dane powinny być szyfrowane at-rest przy użyciu sprawdzonych algorytmów
++   (AES-256).
++2. **Szyfruj po stronie serwera.** Klucz szyfrujący powinien być
++   przechowywany w bezpiecznym magazynie sekretów, np. AWS KMS, HashiCorp
++   Vault albo Azure Key Vault, i nigdy nie powinien znaleźć się w bazie
++   danych ani w repozytorium kodu.
++3. **Zasada najmniejszych uprawnień.** Dostęp do odszyfrowanych wartości
++   powinien mieć wyłącznie serwis, który faktycznie wykonuje wywołania
++   do zewnętrznego API.
++4. **Defense in depth.** Warto łączyć szyfrowanie z kontrolą dostępu na
++   poziomie bazy danych (row-level security) oraz audytem dostępu.
++
++## Proponowana architektura
++
++- Frontend wysyła token przez HTTPS do dedykowanego endpointu REST
++  (`POST /api/user/api-keys`).
++- Backend waliduje token i szyfruje go algorytmem AES-256-GCM przy użyciu
++  klucza z KMS.
++- Zaszyfrowany token trafia do tabeli `user_api_keys` w bazie danych
++  (kolumny: `id`, `user_id`, `provider`, `encrypted_key`, `created_at`).
++- Kiedy aplikacja potrzebuje wykonać wywołanie do OpenRoutera, serwis
++  backendu pobiera zaszyfrowany token, odszyfrowuje go w pamięci
++  i dołącza do żądania jako nagłówek `Authorization`.
++- Rozważyć cache'owanie odszyfrowanego tokenu w pamięci procesu (z TTL),
++  żeby ograniczyć liczbę wywołań do KMS.
++
++## Dobre praktyki dodatkowe
++
++- **Rotacja kluczy** — zarówno kluczy szyfrujących (KMS wspiera rotację
++  automatyczną), jak i tokenów użytkowników (UI powinno umożliwiać
++  podmianę tokenu).
++- **Maskowanie w UI** — po zapisaniu tokenu użytkownik powinien widzieć
++  tylko jego fragment (np. cztery ostatnie znaki).
++- **Audyt** — logować zdarzenia zapisu i użycia tokenu (bez logowania
++  samej wartości).
++- **Monitoring** — alerty na nietypowe wzorce użycia.
++- **Zgodność** — warto sprawdzić wymogi RODO/GDPR dotyczące przechowywania
++  danych powierzonych przez użytkownika.
++
++## Podsumowanie
++
++Zastosowanie powyższych praktyk (szyfrowanie AES-256-GCM, klucz w KMS,
++dostęp tylko po stronie serwera, rotacja, maskowanie w UI) zapewni
++bezpieczeństwo tokenów użytkowników na poziomie odpowiadającym standardom
++branżowym (OWASP ASVS, SOC 2).

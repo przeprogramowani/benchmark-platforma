@@ -1,0 +1,48 @@
+# Asercja static/openrouter-token-plan-hygiene — zadanie plan-openrouter-token-storage.
+# Schemat: .bench-kit/runner/src/schemas/check.ts
+#
+# Zadanie jest koncepcyjne (deliverable = jeden plik markdown), więc jedyna
+# deterministyczna miara to higiena zlecenia: plik planu istnieje i jest
+# niepusty, a diff nie zawiera NICZEGO poza nim. Jakość planu mierzy
+# wyłącznie sędzia (judge/plan-openrouter-token-storage).
+#
+# `score: binary` celowo spina oba checki w jedno pytanie "czy deliverable
+# jest higieniczny": pusty diff → 0 (brak planu), plan + jakakolwiek zmiana
+# w kodzie/konfiguracji → też 0 (zlecenie mówi wprost: naruszenie granicy
+# = twarda porażka próby, niezależnie od jakości planu). Rubryka sędziego
+# ma analogiczną bramkę, więc naruszenie zeruje obie składowe.
+#
+# Zero zależności: żaden check nie instaluje niczego i nie buduje projektu
+# — ocena kosztuje sekundy, a asercja nie może zepsuć się od dryfu stacku.
+score: binary
+checks:
+  # Miara pracy (czerwona na stanie startowym): plik planu pod narzuconą
+  # ścieżką istnieje i jest niepusty. Substancję ocenia sędzia.
+  - name: plan-file-exists-nonempty
+    run: |
+      f=docs/plans/openrouter-token-storage.md
+      [ -f "$f" ] || { echo "FAIL: brak pliku $f"; exit 1; }
+      [ -s "$f" ] || { echo "FAIL: plik $f jest pusty"; exit 1; }
+      echo "OK: $f istnieje ($(wc -c < "$f") B)"
+
+  # Guard granicy (zielony na stanie startowym i na wzorcu): poza plikiem
+  # planu drzewo robocze musi być czyste. Workspace to repo git z commitem
+  # stanu startowego, a patch.diff jest nałożony bez commita — git status
+  # widzi więc dokładnie zmiany agenta. `-uall` rozwija katalogi na pliki;
+  # ścieżki ze spacjami git cytuje w cudzysłowach — zdejmujemy je przed
+  # porównaniem. Wpisy rename ("R  a -> b") nie przejdą dopasowania
+  # exact-match i słusznie oblewają: każda zmiana istniejącego pliku jest
+  # poza granicą zlecenia. Pliki ignorowane (.gitignore, np. node_modules)
+  # celowo nie liczą się jako naruszenie.
+  - name: no-changes-outside-plan-file
+    run: |
+      cd /workspace
+      status=$(git status --porcelain=v1 -uall)
+      printf '%s\n' "$status"
+      bad=$(printf '%s\n' "$status" | sed '/^$/d' | cut -c4- | sed 's/^"//; s/"$//' | grep -vx 'docs/plans/openrouter-token-storage.md' || true)
+      if [ -n "$bad" ]; then
+        echo "FAIL: diff zawiera zmiany poza docs/plans/openrouter-token-storage.md:"
+        printf '%s\n' "$bad"
+        exit 1
+      fi
+      echo "OK: żadnych zmian poza plikiem planu"

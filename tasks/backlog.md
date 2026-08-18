@@ -6,7 +6,7 @@ Skille tylko edytują ten plik — gitem zarządza użytkownik.
 
 ## add-courses-view-toggle
 
-- **Status**: pending
+- **Status**: done
 - **Dodano**: 2026-08-18
 - **Typ**: implementacja
 - **Repo bazowe**: przeprogramowani-edu
@@ -39,7 +39,7 @@ Skille tylko edytują ten plik — gitem zarządza użytkownik.
 
 ## plan-openrouter-token-storage
 
-- **Status**: pending
+- **Status**: done
 - **Dodano**: 2026-08-18
 - **Typ**: dokumentacja
 - **Repo bazowe**: przeprogramowani-edu

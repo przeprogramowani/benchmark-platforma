@@ -1,0 +1,60 @@
+# Implementacja: przełącznik widoku listy kursów (kafelki / lista) na /courses.
+# Schemat: .bench-kit/runner/src/schemas/task.ts
+
+repo: przeprogramowani-edu
+
+# Ostatni commit na origin/master z zielonym Platform CI / Deploy w chwili
+# budowy zadania. Strona /courses i jej komponenty istnieją na nim w stanie,
+# do którego odnosi się zlecenie (jeden widok siatki kart). Overlaya nie ma:
+# to implementacja nowej funkcji na zastanym stanie repo, nie seed buga.
+commit: "c393bb8ace8bdc88c3de36a7406f903ba7230d68"
+
+# Zależności zapiekane w obraz zadania: prompt każe agentowi zweryfikować
+# pracę (`pnpm run check`), a próba biegnie offline. Artefakty prepare są
+# commitowane w obrazie, więc node_modules nie wchodzi do patch.diff agenta.
+# Jedna linia, nie blok `|` — runner wkleja wartość wprost do Dockerfile'a.
+prepare: "corepack enable >/dev/null 2>&1 || true; pnpm install --frozen-lockfile"
+
+# astro check chodzi po ~780 plikach monorepo — ten sam sufit pamięci,
+# który wyznaczyło zadanie mission-log-model-refactor na tym repo.
+memory_mb: 6144
+
+# Naprowadzenie kierunkowe: prompt nazywa stronę /courses i obszar listy
+# kursów, ale nie wskazuje plików ani komponentów — lokalizacja należy do
+# agenta. 600 s wystarcza na lokalizację, dwa warianty prezentacji, obsługę
+# trwałości i jeden cykl weryfikacji (astro check).
+timeout_s: 600
+
+evaluation:
+  - tests/courses-view-toggle
+  - static/lint
+  - judge/courses-view-toggle
+
+weights:
+  # Miara pracy: render strony /courses przez Astro Container w node
+  # (kontrolka z dostępnym stanem wyboru, domyślne kafelki, ten sam zbiór
+  # kursów w obu widokach, aplikacja zapisanego widoku przed malowaniem).
+  # Render w node bez window/localStorage łapie też pułapkę SSR — solucja
+  # czytająca localStorage na ścieżce serwerowej zeruje całą składową.
+  tests: 0.55
+  # To, czego test nie widzi: czy zapis wyboru do localStorage faktycznie
+  # następuje przy przełączeniu, czy toggle nie duplikuje szablonu karty
+  # kursu bez potrzeby, czy stylowanie trzyma konwencje repo (Tailwind
+  # utilities, bez React) i czy zakres nie wyszedł poza obszar /courses.
+  judge: 0.45
+  # Guard, nie różnicowanie: łapie rozwalenie repo, ale jest zielony
+  # niezależnie od jakości rozwiązania — stąd waga 0.
+  static: 0
+  e2e: 0
+
+# Zachowanie asercji nie-LLM-owych na stanie startowym (pusty diff).
+# tests: 3 z 4 checków czerwone (czwarty — spójność zbioru kursów — jest
+# guardem, zielonym trywialnie przy jednym widoku), więc score < 1 = fail.
+reference:
+  tests/courses-view-toggle: fail
+  static/lint: pass
+
+# Pin siedzi na ruchliwym masterze; obszar /courses zmienia się rzadziej
+# niż lekcje, ale mock warstwy dostępów w ukrytym teście zależy od nazw
+# modułów serwerowych — starzenie jak pozostałe zadania na tym repo.
+expires: "2027-02-28"
