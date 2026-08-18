@@ -1,7 +1,7 @@
 # Backlog zleceń zadań
 
 Zlecenia tworzy skill **bench-new-task**, buduje je skill
-**bench-build**. Statusy: pending / in-progress / done / dropped.
+**bench-build**. Statusy: pending / pending / done / dropped.
 Skille tylko edytują ten plik — gitem zarządza użytkownik.
 
 ## add-courses-view-toggle
